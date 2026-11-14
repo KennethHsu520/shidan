@@ -257,6 +257,32 @@ button.row.coin { display: flex; align-items: center; gap: 12px; }
 .tv .chartwrap { position: relative; overflow: hidden; }
 .tv .chartwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #toast { top: auto; bottom: calc(186px + env(safe-area-inset-bottom)); }
+button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.tools .seg button { padding: 8px 13px; min-height: 36px; font-size: 13px; }
+.chip { min-height: 36px; padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+.pill { padding: 7px 14px; }
+.symbtn { min-height: 44px; padding: 6px 10px 6px 0; }
+.quick button { padding: 9px 14px; font-size: 13px; min-height: 38px; }
+.quick { gap: 8px; }
+.nx { padding: 8px 0 8px 16px; min-height: 44px; justify-content: center; }
+.strip-in { min-height: 58px; }
+.tradebar, .crossbar { min-height: 56px; gap: 10px; }
+.act { border-radius: 14px; min-height: 56px; font-size: 17px; }
+.amt { width: 80px; border-radius: 14px; }
+.crossbar .x { width: 46px; border-radius: 14px; font-size: 16px; }
+.btn.sm { min-height: 38px; padding: 8px 16px; font-size: 13px; }
+button.row, .coin { min-height: 56px; }
+.tabs a { padding: 15px 0 14px; }
+.act, .amt, .chip, .seg button, .btn, .opt, .quick button, button.row, .strip-in, .nx, .symbtn, .pill, .x { transition: opacity 0.08s, transform 0.08s; }
+.act:active, .amt:active, .chip:active, .seg button:active, .btn:active, .opt:active, .quick button:active, button.row:active, .strip-in:active, .nx:active, .symbtn:active, .pill:active, .crossbar .x:active, .tabs a:active { opacity: 0.6; }
+.act:active, .amt:active, .btn:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .act:active, .amt:active, .btn:active { transform: none; } }
+.act.buy { box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12); }
+.act.sell { box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12); }
+.thp b { font-size: 24px; font-weight: 600; }
+.strip-in .sr b { font-size: 18px; }
+.sheet { border-radius: 20px 20px 0 0; }
+.sheet::before { content: ""; display: block; width: 36px; height: 4px; border-radius: 4px; background: var(--line); margin: -8px auto 14px; }
 
 </style>
 </head>
@@ -1149,7 +1175,7 @@ const LESSONS = [
       { h: '顏色代表漲跌', p: '收盤比開盤高，是上漲的 K 線；收盤比開盤低，是下跌的 K 線。這裡預設綠漲紅跌，和多數加密貨幣交易所一樣。想用台股的紅漲綠跌，可以在「成績」頁最下面切換。' },
       { h: '實體和影線', p: '粗的部分叫實體，是開盤到收盤的範圍。上下的細線叫影線，是這段時間曾經到過的最高和最低。' },
       { h: '影線在說什麼', p: '很長的上影線，表示價格衝上去又被賣下來，上面有人在賣。很長的下影線則表示跌下去有人接。' },
-      { h: '在圖上看價格', p: '長按走勢圖會出現十字線，手指移到哪根 K 棒，上方就顯示它的開盤、最高、最低、收盤，右邊顯示十字線所在的價格。' },
+      { h: '在圖上看價格', p: '點一下走勢圖會出現十字線，手指拖到哪根 K 棒，上方就顯示它的開盤、最高、最低、收盤，右邊顯示十字線所在的價格。' },
       { h: '時間週期', p: '同一段行情，用 1 分 K 看很雜亂，用 1 小時 K 看可能只是一小段。週期越長，訊號越可靠，但機會也越少。' }
     ],
     task: { text: '到「交易」頁，把圖表切換成 5 分 K 看看。', flag: 'interval' },
@@ -1167,12 +1193,12 @@ const LESSONS = [
     cards: [
       { h: '市價單', p: '[[市價單]]用現在的價格馬上成交。好處是一定買得到，壞處是價格由市場決定。' },
       { h: '限價單', p: '[[限價單]]由你指定價格：「跌到這裡我才買」。好處是價格由你決定，壞處是可能等不到。' },
-      { h: '在圖上掛單', p: '長按走勢圖，十字線對準你要的價格後放開，按下方的「在此掛單」就掛好了。掛單會變成圖上的一條線，按住那條線上下拖就能改價格。' },
+      { h: '在圖上掛單', p: '點一下走勢圖，拖動十字線對準你要的價格，按下方的「在此掛單」就掛好了。掛單會變成圖上的一條線，按住線右邊的小把手上下拖就能改價格。' },
       { h: '掛單會佔用資金', p: '限價單掛著的時候，那筆錢會先被保留。取消掛單，錢就退回來。' },
       { h: '什麼時候用哪一種', p: '有計畫、願意等，就用限價。新手最常犯的錯，是怕買不到而一直用市價追。' },
       { h: '滑價', p: '行情跳得很快時，市價單的成交價可能比你按下去時看到的差一點，這叫[[滑價]]。' }
     ],
-    task: { text: '到「交易」頁，長按走勢圖，在比現價低的位置掛一張買漲的單。掛完可以取消。', flag: 'limitPlaced' },
+    task: { text: '到「交易」頁，點一下走勢圖，在比現價低的位置掛一張買漲的單。掛完可以取消。', flag: 'limitPlaced' },
     quiz: [
       { q: '你想「跌到某個價格才買」，該用哪一種單？', opts: ['限價單', '市價單', '兩種都可以', '沒有這種單'], a: 0, why: '限價單就是替你等價格的單。' },
       (c) => ({ q: 'BTC 現價 ' + c.f(c.p) + '。你掛了限價買單在 ' + c.f(c.p * 0.99) + '，結果價格直接漲上去沒有回頭。會怎樣？', opts: ['沒有成交，錢退回來之前都被保留著', '用 ' + c.f(c.p) + ' 成交', '用更高的價格成交', '掛單自動變成市價單'], a: 0, why: '限價單只在到價時成交。沒買到不算損失，追高才是。' }),
@@ -1187,7 +1213,7 @@ const LESSONS = [
       { h: '設在哪裡', p: '設在「進場理由不成立」的位置，不是「我賠得起」的位置。你因為價格守住某個低點才買，停損就放在那個低點下面一點。' },
       { h: '太近會被洗掉', p: '停損設得比平常的波動還近，價格正常跳一下就會把你掃出場，然後才往你要的方向走。' },
       { h: '停損不是失敗', p: '很多賺錢的交易員，一半以上的單都是停損出場。他們賺錢，是因為賠的時候賠得很少。' },
-      { h: '在圖上設停損', p: '從這個段位開始，每次進場系統會依照最近的波動，先幫你放一條停損線和停利線。按住線上下拖，或長按圖選「設為停損」，就能改成你判斷的位置。' },
+      { h: '在圖上設停損', p: '從這個段位開始，每次進場系統會依照最近的波動，先幫你放一條停損線和停利線。按住線右邊的小把手上下拖，或點圖選「設為停損」，就能改成你判斷的位置。' },
       { h: '停損只能往有利的方向移', p: '價格靠近停損時把它移遠，等於沒有設。這是最常見、也最貴的壞習慣。' },
       { h: '過關後解鎖買跌', p: '買跌（做空）是賭價格下跌：價格跌你賺，漲你賠，而且上漲沒有上限，所以一定要會停損才能用。這關過了，下方的「買跌」就會打開。' }
     ],
@@ -1347,6 +1373,24 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   const fVol = (v) => (v >= 1e9 ? (v / 1e9).toFixed(1) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : fU(v));
   const cls = (x) => (x > 0 ? 'up' : x < 0 ? 'down' : '');
   const roundP = (p) => { const d = dec(p); const m = Math.pow(10, d); return Math.round(p * m) / m; };
+
+  function morph(a, b) {
+    if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) { a.replaceWith(b.cloneNode(true)); return; }
+    if (a.nodeType === 3) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    if (a.nodeType !== 1) return;
+    for (const at of Array.from(b.attributes)) if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+    for (const at of Array.from(a.attributes)) if (!b.hasAttribute(at.name)) a.removeAttribute(at.name);
+    const ac = a.childNodes, bc = b.childNodes;
+    if (ac.length !== bc.length) { a.innerHTML = b.innerHTML; return; }
+    for (let i = 0; i < bc.length; i++) morph(ac[i], bc[i]);
+  }
+  function patch(el, html) {
+    if (!el) return;
+    const tmp = document.createElement(el.tagName);
+    tmp.innerHTML = html;
+    if (el.childNodes.length !== tmp.childNodes.length) { el.innerHTML = html; return; }
+    for (let i = 0; i < tmp.childNodes.length; i++) morph(el.childNodes[i], tmp.childNodes[i]);
+  }
 
   let state;
   let bootSeen;
@@ -1857,8 +1901,15 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         g.fillStyle = color; g.fillText(label, 10, yy - 9.5);
         g.font = '10px ' + font;
       }
-      tagBox(yy, fP(p), color, kind === 'entry');
-      if (kind && kind !== 'entry') G.lines.push({ kind, id, y: yy, price: p });
+      if (!(kind === 'entry' && Math.abs(yy - y(lastP)) < 19)) tagBox(yy, fP(p), color, kind === 'entry');
+      if (kind && kind !== 'entry') {
+        const hx = pw - 18;
+        g.fillStyle = bg; g.strokeStyle = color; g.lineWidth = 1.25;
+        g.beginPath(); g.roundRect ? g.roundRect(hx - 13, yy - 9, 26, 18, 9) : g.rect(hx - 13, yy - 9, 26, 18); g.fill(); g.stroke();
+        g.beginPath(); for (const dy of [-3, 0, 3]) { g.moveTo(hx - 5, yy + dy); g.lineTo(hx + 5, yy + dy); } g.stroke();
+        g.lineWidth = 1;
+        G.lines.push({ kind, id, y: yy, price: p });
+      }
     };
     for (const o of state.orders) {
       if (o.sym !== sym) continue;
@@ -1911,7 +1962,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       g.fillStyle = rise ? up : down; g.fillText(fPct(kc.c / kc.o - 1), xx, 11);
     } else if (!state.settings.gestured) {
       g.fillStyle = muted; g.font = '11px ' + font;
-      g.fillText('左右滑看紀錄　長按看價格　兩指縮放', 2, 11);
+      g.fillText('點圖看價格　左右滑看紀錄　兩指縮放　按住線可拖', 2, 11);
     }
   }
 
@@ -1931,7 +1982,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (G.pts.size === 2) { T.mode = 'pinch'; T.d0 = dist(); T.vis0 = S.vis; S.drag = null; return; }
       if (G.pts.size > 2) return;
       T.sx = p.x; T.sy = p.y; T.moved = false; T.off0 = S.off; T.wasCross = !!S.cross;
-      const hit = G.geom && !S.cross ? G.lines.slice().sort((a, b) => Math.abs(a.y - p.y) - Math.abs(b.y - p.y)).find((l) => Math.abs(l.y - p.y) <= 16) : null;
+      const hit = G.geom && !S.cross ? G.lines.slice().sort((a, b) => Math.abs(a.y - p.y) - Math.abs(b.y - p.y)).find((l) => Math.abs(l.y - p.y) <= 24) : null;
       if (hit) { T.mode = 'drag'; S.drag = { kind: hit.kind, id: hit.id, price: hit.price }; markChart(); return; }
       if (S.cross) { T.mode = 'cross'; return; }
       T.mode = 'pan';
@@ -1956,6 +2007,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (T.mode === 'pinch') { if (G.pts.size === 0) T.mode = null; return; }
       if (T.mode === 'drag') { commitDrag(); T.mode = null; return; }
       if (T.mode === 'cross') { if (T.wasCross && !T.moved) hideCross(); else renderBar(); }
+      else if (T.mode === 'pan' && !T.moved) { S.cross = { x: T.sx, y: T.sy }; gestured(); drawChart(); renderBar(); }
       T.mode = null;
     };
     c.addEventListener('pointerup', up);
@@ -2105,7 +2157,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const ce = $('#chg');
       ce.textContent = c == null ? '' : fPct(c);
       ce.className = c == null ? '' : cls(c);
-      $('#strip').innerHTML = stripHTML();
+      patch($('#strip'), stripHTML());
       const n = state.positions.length + state.orders.length;
       const bb = $('#bookBtn');
       bb.textContent = n ? '持倉 ' + n : '持倉';
@@ -2276,8 +2328,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     return list.map((s) => '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small></span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>').join('');
   }
   function renderCoins(soft) {
-    if (soft) { const el = $('.coins-list'); if (el) el.innerHTML = coinRows(); return; }
-    openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 10 名，排除穩定幣，每 30 分鐘更新') + '</div><div class="list coins-list">' + coinRows() + '</div>');
+    if (soft) { patch($('.coins-list'), coinRows()); return; }
+    openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 10 名，排除穩定幣，每 30 分鐘更新') + '</div><div class="list coins-list">' + coinRows() + '</div><div class="cta"><button class="btn quiet" data-act="x">關閉</button></div>');
   }
   function renderBook(soft) {
     const P = state.positions, O = state.orders;
@@ -2288,9 +2340,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         const r = posR(p, px);
         return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b><span class="tag">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span><div class="sub">' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '　打平 ' + fP(breakeven(p)) + '</div><div class="sub">' + (p.sl != null ? '停損 ' + fP(p.sl) : '未設停損') + '　' + (p.tp != null ? '停利 ' + fP(p.tp) : '未設停利') + (E.isLev(p) ? '　強平 ' + fP(p.liq) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button>' + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
       }).join('') + '</div>' : '<div class="empty">沒有持倉。</div>') +
-      '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。長按走勢圖就能掛單。</div>') +
+      '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。點一下走勢圖就能掛單。</div>') +
       '<div class="cta"><button class="btn solid" data-act="x">關閉</button></div>';
-    if (soft) { const b = $('#sheetBody'); const top = b.scrollTop; b.innerHTML = html; b.scrollTop = top; return; }
+    if (soft) { patch($('#sheetBody'), html); return; }
     openSheet('book', html);
   }
   function openAmount() {
@@ -2518,12 +2570,11 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     }, 5000);
     setInterval(() => { E.touchDD(state, S.prices); save(); }, 10000);
     const loop = () => {
-      if (S.dirty) { S.dirty = false; tickUI(); }
       if (S.chartDirty && S.view === 'trade') { S.chartDirty = false; drawChart(); }
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-    setInterval(() => { if (S.dirty) { S.dirty = false; tickUI(); } }, 1000);
+    setInterval(() => { if (S.dirty && !G.pts.size) { S.dirty = false; tickUI(); } }, 250);
     window.addEventListener('resize', () => { markChart(); drawSpark(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { S.hiddenAt = Date.now(); save(); }
