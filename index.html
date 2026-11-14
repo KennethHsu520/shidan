@@ -195,6 +195,68 @@ button.row { display: block; width: 100%; text-align: left; }
   .sheet { animation: rise 0.22s ease-out; }
   @keyframes rise { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 }
+main.fixed { overflow: hidden; padding: 0 16px; display: flex; flex-direction: column; }
+.tv { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.th { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 8px; }
+.symbtn { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.symbtn b { font-size: 21px; font-weight: 600; letter-spacing: 0.02em; }
+.symbtn span { font-size: 12px; color: var(--muted); }
+.caret { width: 7px; height: 7px; border-right: 1.5px solid var(--ink2); border-bottom: 1.5px solid var(--ink2); transform: rotate(45deg); margin: 0 0 4px 4px; }
+.thp { text-align: right; display: flex; flex-direction: column; }
+.thp b { font-size: 22px; font-weight: 500; line-height: 1.15; letter-spacing: -0.01em; }
+.thp span { font-size: 12px; }
+.tools { display: flex; align-items: center; gap: 8px; }
+.tools .sp { flex: 1; }
+.tools .seg button { padding: 5px 11px; }
+.tv .chartwrap { flex: 1; height: auto; min-height: 240px; margin: 8px -8px 0 0; }
+.tv .chartwrap canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.strip { border-top: 1px solid var(--line); min-height: 58px; }
+.strip-in { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; text-align: left; }
+.strip-in .sl { display: flex; flex-direction: column; font-size: 14px; min-width: 0; }
+.strip-in .sl small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip-in .side { font-weight: 600; margin-right: 6px; }
+.strip-in .sr { text-align: right; display: flex; flex-direction: column; flex: none; }
+.strip-in .sr b { font-size: 17px; font-weight: 600; }
+.strip-in .sr small { font-size: 11px; }
+.nx { text-align: right; display: flex; flex-direction: column; align-items: flex-end; flex: none; font-size: 13px; padding: 2px 0; }
+.nx small { color: var(--accent); font-size: 11px; letter-spacing: 0.08em; }
+.tbar { padding: 2px 0 10px; flex: none; }
+.tradebar, .crossbar { display: flex; gap: 8px; align-items: stretch; min-height: 52px; }
+.amt { flex: none; width: 72px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; padding: 4px 0; }
+.amt small { font-size: 10px; color: var(--muted); }
+.amt b { font-size: 15px; font-weight: 600; }
+.amt span { font-size: 10px; color: var(--ink2); }
+.act { flex: 1; border: 1px solid var(--ink); border-radius: 10px; font-size: 16px; font-weight: 600; letter-spacing: 0.1em; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; background: transparent; color: var(--ink); }
+.act small { font-size: 10px; font-weight: 400; letter-spacing: 0; }
+.act.buy { background: var(--up); border-color: var(--up); color: #fff; }
+.act.sell { background: var(--down); border-color: var(--down); color: #fff; }
+.act.locked { background: transparent; color: var(--muted); border-color: var(--line); }
+.act.flat { flex: 0 0 64px; letter-spacing: 0.04em; }
+.act.solid { background: var(--ink); border-color: var(--ink); color: #fff; }
+.act.down-o { color: var(--down); border-color: var(--down); }
+.act.up-o { color: var(--up); border-color: var(--up); }
+.crossbar .act { font-size: 13px; letter-spacing: 0.02em; }
+.cp { flex: none; display: flex; flex-direction: column; justify-content: center; min-width: 74px; }
+.cp small { font-size: 10px; color: var(--muted); }
+.cp b { font-size: 14px; font-weight: 600; }
+.crossbar .x { flex: none; width: 38px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink2); background: var(--surface); }
+.rtag { font-size: 13px; margin-left: 10px; border: 1px solid currentColor; border-radius: 6px; padding: 1px 7px; vertical-align: 3px; font-weight: 600; }
+.quick.big { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px; }
+.quick.big button { border-radius: 10px; padding: 10px 0; display: flex; flex-direction: column; align-items: center; font-size: 15px; font-weight: 600; }
+.quick.big small { font-size: 10px; color: var(--muted); font-weight: 400; }
+button.row.coin { display: flex; align-items: center; gap: 12px; }
+.coin .rk { width: 18px; color: var(--muted); font-size: 12px; flex: none; }
+.coin .nm { flex: 1; display: flex; flex-direction: column; }
+.coin .nm small, .coin .pr small { font-size: 11px; color: var(--muted); }
+.coin .pr { text-align: right; display: flex; flex-direction: column; }
+.coin .pr small.up { color: var(--up); }
+.coin .pr small.down { color: var(--down); }
+.coin.on .nm b { color: var(--accent); }
+.chip.on { border-color: var(--ink); color: var(--ink); }
+.top { padding: calc(10px + env(safe-area-inset-top)) 16px 8px; }
+.tv .chartwrap { position: relative; overflow: hidden; }
+.tv .chartwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#toast { top: auto; bottom: calc(186px + env(safe-area-inset-bottom)); }
 
 </style>
 </head>
@@ -227,7 +289,8 @@ button.row { display: block; width: 100%; text-align: left; }
 </div>
 <script>
 const Engine = (() => {
-  const ALL = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE'];
+  const ALL = ['BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'SUI', 'ADA', 'TRX', 'LINK'];
+  const SYM = /^[A-Z0-9]{2,15}$/;
   const RANKS = [
     null,
     { n: 1, name: '新手', cap: 1000, maxLev: 1, syms: ['BTC', 'ETH'] },
@@ -274,7 +337,8 @@ const Engine = (() => {
       refills: 0,
       lastSeen: now,
       lastPrices: {},
-      settings: { twColors: false, ma: false, sym: 'BTC', interval: '1m' }
+      settings: { twColors: false, ma: false, sym: 'BTC', interval: '1m', amtPct: 0.1, lev: 1, gestured: false },
+      coinCache: null
     };
   }
 
@@ -339,17 +403,21 @@ const Engine = (() => {
     return null;
   }
 
+  function canShort(s) {
+    return s.rank >= 4 || !!(s.lessons[5] && s.lessons[5].done);
+  }
+
   function checkOrderInput(s, o) {
     const r = RANKS[s.rank];
-    if (!r.syms.includes(o.sym)) return '這個幣種要到更高段位才會解鎖';
+    if (typeof o.sym !== 'string' || !SYM.test(o.sym)) return '幣種不正確';
     if (o.side !== 'long' && o.side !== 'short') return '方向不正確';
-    if (o.side === 'short' && s.rank < 4) return '做空要到段位 4 才會解鎖';
+    if (o.side === 'short' && !canShort(s)) return '買跌要先通過第 5 關（停損）';
     if (!Number.isInteger(o.lev) || o.lev < 1) return '槓桿倍數不正確';
     if (o.lev > r.maxLev) return '這個槓桿倍數還沒解鎖';
     if (!pos(o.amount)) return '請輸入金額';
     if (o.amount < MIN_AMOUNT) return '最少要下 ' + MIN_AMOUNT + ' USDT';
     if ((o.sl != null || o.tp != null) && s.rank < 2) return '停損停利要到段位 2 才會解鎖';
-    if (!REASONS[o.reason]) return '請選一個下單的理由';
+    if (o.reason != null && !REASONS[o.reason]) return '理由不正確';
     return null;
   }
 
@@ -389,13 +457,14 @@ const Engine = (() => {
       feeOpen: fee,
       sl,
       tp,
-      reason: o.reason,
+      reason: o.reason || null,
       t0: o.now,
       eq0,
       sizePct: o.amount / eq0,
       riskPct: sl != null ? (Math.abs(o.price - sl) * qty) / eq0 : null,
       hadSL: sl != null,
       liq: liqPrice(o.side, o.price, o.lev),
+      r0: sl != null ? Math.abs(o.price - sl) * qty : null,
       ctx: o.ctx || null,
       afterLoss: recentLoss(s, o.now)
     };
@@ -419,9 +488,29 @@ const Engine = (() => {
       if (rr >= 1.5 - 1e-9) s.flags.rr = true;
     }
     if (p.riskPct != null && p.riskPct <= 0.02 + 1e-9) s.flags.risk2 = true;
-    if (p.reason === 'trend' && p.ctx && p.ctx.above != null) {
-      if ((p.side === 'long' && p.ctx.above) || (p.side === 'short' && !p.ctx.above)) s.flags.trendTrade = true;
+  }
+
+  function setReason(s, id, reason) {
+    if (!REASONS[reason]) return { ok: false, err: '理由不正確' };
+    const t = s.trades.find((x) => x.id === id);
+    if (!t) return { ok: false, err: '找不到這筆交易' };
+    t.reason = reason;
+    if (reason === 'trend' && t.ctx && t.ctx.above != null && ((t.side === 'long' && t.ctx.above) || (t.side === 'short' && !t.ctx.above))) s.flags.trendTrade = true;
+    return { ok: true };
+  }
+
+  function modifyOrder(s, id, limit, cur) {
+    const o = s.orders.find((x) => x.id === id);
+    if (!o) return { ok: false, err: '找不到這張掛單' };
+    if (!pos(limit) || !pos(cur)) return { ok: false, err: '價格不正確' };
+    if (o.side === 'long' && limit >= cur) return { ok: false, err: '買漲的掛單價要低於現價' };
+    if (o.side === 'short' && limit <= cur) return { ok: false, err: '買跌的掛單價要高於現價' };
+    if (o.sl != null || o.tp != null) {
+      const e2 = validateStops(o.side, limit, o.sl, o.tp, o.lev);
+      if (e2) return { ok: false, err: e2 };
     }
+    o.limit = limit;
+    return { ok: true };
   }
 
   function createOrder(s, o) {
@@ -447,7 +536,7 @@ const Engine = (() => {
       limit: o.limit,
       sl,
       tp,
-      reason: o.reason,
+      reason: o.reason || null,
       t: o.now,
       reserve: cost,
       ctx: o.ctx || null
@@ -465,7 +554,7 @@ const Engine = (() => {
     return { ok: true };
   }
 
-  function setStops(s, id, sl, tp, price) {
+  function setStops(s, id, sl, tp, price, auto) {
     if (s.rank < 2) return { ok: false, err: '停損停利要到段位 2 才會解鎖' };
     const p = s.positions.find((x) => x.id === id);
     if (!p) return { ok: false, err: '找不到這筆持倉' };
@@ -485,13 +574,15 @@ const Engine = (() => {
     p.sl = sl;
     p.tp = tp;
     if (sl != null) {
-      p.hadSL = true;
-      if (p.riskPct == null) {
+      if (p.r0 == null) p.r0 = Math.abs(p.entry - sl) * p.qty;
+      if (!auto) p.hadSL = true;
+      if (p.riskPct == null || !auto) {
         const adverse = p.side === 'long' ? p.entry - sl : sl - p.entry;
         p.riskPct = Math.max(0, adverse * p.qty) / p.eq0;
       }
     }
-    markOpenFlags(s, p);
+    if (auto) p.autoSL = sl != null;
+    else markOpenFlags(s, p);
     return { ok: true };
   }
 
@@ -534,7 +625,8 @@ const Engine = (() => {
       t1: now,
       why: reason,
       reason: p.reason,
-      hadSL: p.hadSL,
+      hadSL: p.hadSL || !!p.autoSL,
+      r: p.r0 > 0 ? pnl / p.r0 : null,
       sl: p.sl,
       tp: p.tp,
       sizePct: p.sizePct,
@@ -575,6 +667,7 @@ const Engine = (() => {
       s.flags.limitPlaced = saved;
       if (r.ok) {
         r.pos.fresh = true;
+        r.pos.fromLimit = true;
         events.push({ type: 'fill', pos: r.pos });
       }
     }
@@ -876,7 +969,8 @@ const Engine = (() => {
     const long = t.side === 'long';
     const win = t.pnl > 0;
     const c = t.ctx;
-    if (t.reason === 'trend') {
+    if (!t.reason) L.push('選一個進場理由，檢討會更具體。');
+    else if (t.reason === 'trend') {
       if (c && c.above != null) {
         const aligned = long ? c.above : !c.above;
         L.push(aligned ? '進場時價格在均線' + (long ? '上方' : '下方') + '，方向和你說的「順著趨勢」一致。' : '你選了「順著趨勢」，但進場時價格在均線' + (long ? '下方' : '上方') + '，這其實是逆勢。');
@@ -939,10 +1033,10 @@ const Engine = (() => {
     const num = (x, d) => (fin(x) ? x : d);
     s.rank = Number.isInteger(raw.rank) && raw.rank >= 1 && raw.rank <= 5 ? raw.rank : 1;
     s.cash = Math.max(0, num(raw.cash, RANKS[s.rank].cap));
-    const okPos = (p) => p && ALL.includes(p.sym) && (p.side === 'long' || p.side === 'short') && pos(p.qty) && pos(p.entry) && pos(p.margin) && pos(p.eq0) && Number.isInteger(p.lev) && p.lev >= 1 && p.lev <= 10 && fin(p.t0);
+    const okPos = (p) => p && SYM.test(p.sym) && (p.side === 'long' || p.side === 'short') && pos(p.qty) && pos(p.entry) && pos(p.margin) && pos(p.eq0) && Number.isInteger(p.lev) && p.lev >= 1 && p.lev <= 10 && fin(p.t0);
     s.positions = Array.isArray(raw.positions) ? raw.positions.filter(okPos) : [];
-    s.orders = Array.isArray(raw.orders) ? raw.orders.filter((o) => o && ALL.includes(o.sym) && pos(o.amount) && pos(o.limit) && pos(o.reserve) && Number.isInteger(o.lev)) : [];
-    s.trades = Array.isArray(raw.trades) ? raw.trades.filter((t) => t && ALL.includes(t.sym) && fin(t.pnl) && fin(t.ret) && fin(t.t0) && fin(t.t1)) : [];
+    s.orders = Array.isArray(raw.orders) ? raw.orders.filter((o) => o && SYM.test(o.sym) && pos(o.amount) && pos(o.limit) && pos(o.reserve) && Number.isInteger(o.lev)) : [];
+    s.trades = Array.isArray(raw.trades) ? raw.trades.filter((t) => t && typeof t.sym === 'string' && SYM.test(t.sym) && fin(t.pnl) && fin(t.ret) && fin(t.t0) && fin(t.t1)) : [];
     if (raw.lessons && typeof raw.lessons === 'object') for (const k of Object.keys(raw.lessons)) if (/^\d+$/.test(k) && raw.lessons[k] && typeof raw.lessons[k] === 'object') s.lessons[k] = { read: !!raw.lessons[k].read, done: !!raw.lessons[k].done };
     if (raw.flags && typeof raw.flags === 'object') for (const k of Object.keys(raw.flags)) if (/^[a-zA-Z0-9]+$/.test(k)) s.flags[k] = !!raw.flags[k];
     if (raw.rules && pos(raw.rules.risk) && pos(raw.rules.day) && pos(raw.rules.rr)) s.rules = { risk: Math.min(0.2, raw.rules.risk), day: Math.min(0.5, raw.rules.day), rr: Math.min(10, raw.rules.rr) };
@@ -958,19 +1052,27 @@ const Engine = (() => {
     s.graduated = !!raw.graduated;
     s.refills = Number.isInteger(raw.refills) ? raw.refills : 0;
     s.lastSeen = num(raw.lastSeen, now);
-    if (raw.lastPrices && typeof raw.lastPrices === 'object') for (const k of ALL) if (pos(raw.lastPrices[k])) s.lastPrices[k] = raw.lastPrices[k];
+    if (raw.lastPrices && typeof raw.lastPrices === 'object') for (const k of Object.keys(raw.lastPrices).slice(0, 60)) if (SYM.test(k) && pos(raw.lastPrices[k])) s.lastPrices[k] = raw.lastPrices[k];
     const st = raw.settings || {};
+    const lev = Number.isInteger(st.lev) && st.lev >= 1 && st.lev <= RANKS[s.rank].maxLev ? st.lev : 1;
     s.settings = {
       twColors: !!st.twColors,
       ma: !!st.ma,
-      sym: RANKS[s.rank].syms.includes(st.sym) ? st.sym : 'BTC',
-      interval: ['1m', '5m', '15m', '1h'].includes(st.interval) ? st.interval : '1m'
+      sym: typeof st.sym === 'string' && SYM.test(st.sym) ? st.sym : 'BTC',
+      interval: ['1m', '5m', '15m', '1h'].includes(st.interval) ? st.interval : '1m',
+      amtPct: [0.05, 0.1, 0.25, 0.5, 1].includes(st.amtPct) ? st.amtPct : 0.1,
+      lev,
+      gestured: !!st.gestured
     };
+    if (raw.coinCache && fin(raw.coinCache.t) && Array.isArray(raw.coinCache.list)) {
+      const list = raw.coinCache.list.filter((x) => typeof x === 'string' && SYM.test(x)).slice(0, 10);
+      if (list.length >= 5) s.coinCache = { t: raw.coinCache.t, list };
+    }
     return s;
   }
 
   return {
-    ALL, RANKS, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS,
+    ALL, SYM, RANKS, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS, canShort, setReason, modifyOrder, feeRate,
     newState, equity, touchDD, liqPrice, posPnl, posValue, isLev, maxAmount, costOf,
     openPosition, createOrder, cancelOrder, setStops, closePosition,
     onPrice, onCandle, statsFor, curveDD, levTrades, requirements, promote, checkDemotion,
@@ -1013,9 +1115,10 @@ const LESSONS = [
       { h: '價格是怎麼來的', p: '你看到的價格，是買方和賣方剛剛成交的那一筆。想買的人比較急，價格就漲；想賣的人比較急，價格就跌。沒有人能確定下一秒的方向。' },
       { h: '用什麼買', p: '交易所裡的「錢」是 [[USDT]]，1 USDT 大約等於 1 美元。BTC 的價格寫 60,000，意思是 1 顆比特幣值 60,000 USDT。' },
       { h: '不用買一整顆', p: '你可以只買 0.001 顆。下單時輸入的是「要花多少 USDT」，系統會換算成顆數。' },
+      { h: '怎麼下單', p: '交易頁最下面一排：左邊是每筆要用的金額，按「買漲」就立刻用現價買進。按之前先想清楚：你覺得它會漲的理由是什麼？' },
       { h: '這裡的錢是虛擬的', p: '你有 1,000 USDT 可以練習，賠光了也不會少一塊錢。但請把它當真的錢來操作，學到的習慣才會是真的。' }
     ],
-    task: { text: '到「交易」頁，花 100 USDT 左右買進一筆 BTC。', flag: 'opened' },
+    task: { text: '到「交易」頁，按下方的「買漲」，買進一筆 BTC。', flag: 'opened' },
     quiz: [
       { q: 'BTC 的價格顯示 60,000，代表什麼？', opts: ['1 顆比特幣值 60,000 USDT', '現在有 60,000 個人在買', '至少要有 60,000 USDT 才能買', '比特幣總共有 60,000 顆'], a: 0, why: '價格就是 1 顆值多少 USDT。你可以只買其中一小部分。' },
       (c) => ({ q: 'BTC 現在是 ' + c.f(c.p) + '。你花 100 USDT，大約可以買到多少顆？', opts: [c.q(100 / c.p), c.q(1000 / c.p), c.q(10 / c.p), '1'], a: 0, why: '顆數 = 花的錢 ÷ 價格 = 100 ÷ ' + c.f(c.p) + '。' }),
@@ -1029,9 +1132,10 @@ const LESSONS = [
       { h: '賣出才算數', p: '按下賣出的那一刻，損益才變成真的，錢才回到你的可用資金裡。' },
       { h: '每次成交都要付手續費', p: '買和賣各收成交金額的 0.1%，來回一趟就是 0.2%。買 1,000 USDT，價格完全沒動就賣掉，也會賠 2 USDT。' },
       { h: '所以價格要先漲過成本', p: '價格要漲超過 0.2%，你才開始賺。進出越頻繁，[[手續費]]吃掉的越多。' },
-      { h: '每筆結束都有檢討', p: '賣出之後，這裡會根據你當初選的理由，告訴你這一筆做對和做錯的地方。' }
+      { h: '打平價', p: '持倉旁邊會顯示「打平價」，是把來回手續費算進去之後，價格至少要到哪裡才不賠。' },
+      { h: '每筆結束都有檢討', p: '按「平倉」賣出之後，選一下你當初進場的理由，這裡會告訴你這一筆做對和做錯的地方。' }
     ],
-    task: { text: '把你的持倉賣掉，看看這筆的檢討。', flag: 'closed' },
+    task: { text: '按下方的「平倉」把持倉賣掉，看看這筆的檢討。', flag: 'closed' },
     quiz: [
       { q: '你買了 1,000 USDT 的 BTC，賣出時價格和買進時一模一樣。結果是？', opts: ['賠大約 2 USDT', '不賺不賠', '賺大約 2 USDT', '賠大約 20 USDT'], a: 0, why: '買收 0.1%、賣收 0.1%，來回大約 2 USDT。' },
       (c) => ({ q: '你在 ' + c.f(c.p) + ' 買進 BTC。大約要漲到多少賣出，才剛好不賠？', opts: [c.f(c.p * 1.002), c.f(c.p), c.f(c.p * 1.02), c.f(c.p * 0.998)], a: 0, why: '來回手續費約 0.2%，所以要比買進價高 0.2% 左右。' }),
@@ -1045,6 +1149,7 @@ const LESSONS = [
       { h: '顏色代表漲跌', p: '收盤比開盤高，是上漲的 K 線；收盤比開盤低，是下跌的 K 線。這裡預設綠漲紅跌，和多數加密貨幣交易所一樣。想用台股的紅漲綠跌，可以在「成績」頁最下面切換。' },
       { h: '實體和影線', p: '粗的部分叫實體，是開盤到收盤的範圍。上下的細線叫影線，是這段時間曾經到過的最高和最低。' },
       { h: '影線在說什麼', p: '很長的上影線，表示價格衝上去又被賣下來，上面有人在賣。很長的下影線則表示跌下去有人接。' },
+      { h: '在圖上看價格', p: '長按走勢圖會出現十字線，手指移到哪根 K 棒，上方就顯示它的開盤、最高、最低、收盤，右邊顯示十字線所在的價格。' },
       { h: '時間週期', p: '同一段行情，用 1 分 K 看很雜亂，用 1 小時 K 看可能只是一小段。週期越長，訊號越可靠，但機會也越少。' }
     ],
     task: { text: '到「交易」頁，把圖表切換成 5 分 K 看看。', flag: 'interval' },
@@ -1062,11 +1167,12 @@ const LESSONS = [
     cards: [
       { h: '市價單', p: '[[市價單]]用現在的價格馬上成交。好處是一定買得到，壞處是價格由市場決定。' },
       { h: '限價單', p: '[[限價單]]由你指定價格：「跌到這裡我才買」。好處是價格由你決定，壞處是可能等不到。' },
+      { h: '在圖上掛單', p: '長按走勢圖，十字線對準你要的價格後放開，按下方的「在此掛單」就掛好了。掛單會變成圖上的一條線，按住那條線上下拖就能改價格。' },
       { h: '掛單會佔用資金', p: '限價單掛著的時候，那筆錢會先被保留。取消掛單，錢就退回來。' },
       { h: '什麼時候用哪一種', p: '有計畫、願意等，就用限價。新手最常犯的錯，是怕買不到而一直用市價追。' },
       { h: '滑價', p: '行情跳得很快時，市價單的成交價可能比你按下去時看到的差一點，這叫[[滑價]]。' }
     ],
-    task: { text: '到「交易」頁，掛一張比現價低的限價買單。掛完可以取消。', flag: 'limitPlaced' },
+    task: { text: '到「交易」頁，長按走勢圖，在比現價低的位置掛一張買漲的單。掛完可以取消。', flag: 'limitPlaced' },
     quiz: [
       { q: '你想「跌到某個價格才買」，該用哪一種單？', opts: ['限價單', '市價單', '兩種都可以', '沒有這種單'], a: 0, why: '限價單就是替你等價格的單。' },
       (c) => ({ q: 'BTC 現價 ' + c.f(c.p) + '。你掛了限價買單在 ' + c.f(c.p * 0.99) + '，結果價格直接漲上去沒有回頭。會怎樣？', opts: ['沒有成交，錢退回來之前都被保留著', '用 ' + c.f(c.p) + ' 成交', '用更高的價格成交', '掛單自動變成市價單'], a: 0, why: '限價單只在到價時成交。沒買到不算損失，追高才是。' }),
@@ -1081,9 +1187,11 @@ const LESSONS = [
       { h: '設在哪裡', p: '設在「進場理由不成立」的位置，不是「我賠得起」的位置。你因為價格守住某個低點才買，停損就放在那個低點下面一點。' },
       { h: '太近會被洗掉', p: '停損設得比平常的波動還近，價格正常跳一下就會把你掃出場，然後才往你要的方向走。' },
       { h: '停損不是失敗', p: '很多賺錢的交易員，一半以上的單都是停損出場。他們賺錢，是因為賠的時候賠得很少。' },
-      { h: '停損只能往有利的方向移', p: '價格靠近停損時把它移遠，等於沒有設。這是最常見、也最貴的壞習慣。' }
+      { h: '在圖上設停損', p: '從這個段位開始，每次進場系統會依照最近的波動，先幫你放一條停損線和停利線。按住線上下拖，或長按圖選「設為停損」，就能改成你判斷的位置。' },
+      { h: '停損只能往有利的方向移', p: '價格靠近停損時把它移遠，等於沒有設。這是最常見、也最貴的壞習慣。' },
+      { h: '過關後解鎖買跌', p: '買跌（做空）是賭價格下跌：價格跌你賺，漲你賠，而且上漲沒有上限，所以一定要會停損才能用。這關過了，下方的「買跌」就會打開。' }
     ],
-    task: { text: '下一筆有設停損價的單。', flag: 'slSet' },
+    task: { text: '進場後，自己把停損線拖到你判斷的位置（理由不成立的地方）。', flag: 'slSet' },
     quiz: [
       { q: '賠掉 50% 之後，要賺多少才能回本？', opts: ['100%', '50%', '75%', '25%'], a: 0, why: '1,000 賠一半剩 500，500 要翻一倍才回到 1,000。' },
       (c) => ({ q: '你在 ' + c.f(c.p) + ' 買進 BTC，決定價格跌 2% 就認錯。停損價該設在哪？', opts: [c.f(c.p * 0.98), c.f(c.p * 0.8), c.f(c.p * 1.02), c.f(c.p * 0.998)], a: 0, why: '進場價 × 0.98 = ' + c.f(c.p * 0.98) + '。' }),
@@ -1099,7 +1207,7 @@ const LESSONS = [
       { h: '高勝率的陷阱', p: '[[勝率]] 70% 聽起來很好。但如果每次只賺 1%、每次都賠 3%，十筆下來是 7% − 9% = −2%。' },
       { h: '一條簡單的規則', p: '盈虧比低於 1.5 的單不要下。下單畫面會幫你算出來。' }
     ],
-    task: { text: '下一筆同時有停損和停利、而且盈虧比至少 1.5 的單。', flag: 'rr' },
+    task: { text: '進場後調整停損和停利線，讓盈虧比至少 1.5。拖線時圖上會顯示盈虧比。', flag: 'rr' },
     quiz: [
       { q: '停損設 2%，停利設 5%。盈虧比是多少？', opts: ['2.5', '0.4', '3', '7'], a: 0, why: '5 ÷ 2 = 2.5。' },
       { q: '勝率只有 40%，但每次賺 4%、每次賠 2%。做 10 筆的結果是？', opts: ['賺 4%', '賠 4%', '不賺不賠', '賠 12%'], a: 0, why: '4 筆 × 4% = 16%，6 筆 × 2% = 12%，相減是 +4%。' },
@@ -1115,7 +1223,7 @@ const LESSONS = [
       { h: '停損越遠，買得越少', p: '想把停損放遠一點沒有問題，但金額要跟著縮小，讓最多賠的錢保持不變。' },
       { h: '剛賠完的時候最危險', p: '賠錢後想馬上「贏回來」而加碼，叫報復性交易。這裡偵測到會提醒你。' }
     ],
-    task: { text: '下一筆「停損觸發時，最多賠總資產 2%」的單。下單畫面會顯示這個數字。', flag: 'risk2' },
+    task: { text: '調整停損線，讓「打到停損時賠的錢」不超過總資產 2%。拖線時圖上會顯示這個比例。', flag: 'risk2' },
     quiz: [
       { q: '總資產 10,000，每筆最多賠 2%。停損距離是 5%，這筆最多可以買多少？', opts: ['4,000', '200', '10,000', '500'], a: 0, why: '可以賠 200。200 ÷ 0.05 = 4,000。' },
       { q: '同樣的總資產，停損距離從 2% 放寬到 4%，買的金額應該怎麼調？', opts: ['減半', '加倍', '不變', '全部買進'], a: 0, why: '停損遠一倍，金額就要少一半，最多賠的錢才會一樣。' },
@@ -1131,7 +1239,7 @@ const LESSONS = [
       { h: '順勢', p: '上升趨勢裡只找買點。等價格回到均線附近再買，比追在最高點安全，停損也好放。' },
       { h: '均線的限制', p: '均線是落後的，只告訴你現在的方向。盤整的時候，價格會在均線上下來回穿，訊號常常失效。' }
     ],
-    task: { text: '打開圖表上的 MA20，下一筆理由選「順著趨勢」、而且方向真的和均線一致的單。', flag: 'trendTrade' },
+    task: { text: '打開圖表上的 MA20，順著均線方向做一筆，出場時理由選「順著趨勢」。', flag: 'trendTrade' },
     quiz: [
       { q: '下面哪一個是上升趨勢？', opts: ['高點和低點都越來越高', '今天比昨天漲', '出現一根很長的綠 K', '價格比你的買進價高'], a: 0, why: '趨勢看的是一連串高低點的排列，不是單一根 K 線。' },
       (c) => {
@@ -1216,31 +1324,33 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   const E = Engine;
   const KEY = 'shidan.v1';
   const TWD = 32;
-  const IVS = { '1m': ['1 分', 1], '5m': ['5 分', 5], '15m': ['15 分', 15], '1h': ['1 時', 60] };
-  const NAMES = { BTC: '比特幣', ETH: '以太幣', SOL: 'Solana', BNB: '幣安幣', XRP: '瑞波幣', DOGE: '狗狗幣' };
-  const UNLOCK = { 2: '資金 3,000 USDT，解鎖停損和停利', 3: '資金 10,000 USDT，解鎖全部 6 種幣和均線', 4: '資金 30,000 USDT，解鎖做空和最高 3 倍槓桿', 5: '資金 100,000 USDT，解鎖最高 10 倍槓桿' };
-  const HAVE = { 1: '現貨買賣、限價單', 2: '現貨買賣、限價單、停損停利', 3: '6 種幣、均線、停損停利', 4: '做空、最高 3 倍槓桿', 5: '做空、最高 10 倍槓桿' };
-  const WHY = { manual: '手動出場', sl: '停損出場', tp: '停利出場', liq: '強制平倉', demote: '降級平倉' };
+  const IVS = { '1m': ['1分', 1], '5m': ['5分', 5], '15m': ['15分', 15], '1h': ['1時', 60] };
+  const UNLOCK = { 2: '資金 3,000 USDT，解鎖停損和停利線', 3: '資金 10,000 USDT，解鎖均線', 4: '資金 30,000 USDT，解鎖最高 3 倍槓桿', 5: '資金 100,000 USDT，解鎖最高 10 倍槓桿' };
+  const HAVE = { 1: '當日前 10 大幣、市價買賣、限價單（第 3 關後）', 2: '停損停利線、買跌（第 5 關後）', 3: '均線、停損停利、買跌', 4: '最高 3 倍槓桿、買跌', 5: '最高 10 倍槓桿、買跌' };
+  const WHY = { manual: '手動平倉', sl: '停損出場', tp: '停利出場', liq: '強制平倉', demote: '降級平倉' };
+  const STABLE = new Set(['USDC', 'FDUSD', 'TUSD', 'USDP', 'DAI', 'BUSD', 'EUR', 'EURI', 'AEUR', 'USD1', 'RLUSD', 'PYUSD', 'USDE', 'XUSD', 'BFUSD', 'USDS', 'PAXG', 'XAUT', 'WBTC', 'WBETH', 'BNSOL', 'GBP', 'TRY', 'BRL']);
+  const SEEDS = { BTC: 68800, ETH: 1935, SOL: 72.4, XRP: 1.21, BNB: 618, DOGE: 0.0963, SUI: 1.42, ADA: 0.318, TRX: 0.262, LINK: 8.31 };
 
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const rich = (s) => esc(s).replace(/\[\[(.+?)\]\]/g, (m, t) => (GLOSSARY[t] ? '<span class="term" role="button" tabindex="0" data-act="term" data-t="' + t + '">' + t + '</span>' : t));
-
-  const dec = (p) => (p >= 10 ? 2 : p >= 1 ? 4 : 5);
+  const dec = (p) => (p >= 1000 ? 2 : p >= 10 ? 3 : p >= 1 ? 4 : p >= 0.01 ? 5 : p >= 0.0001 ? 7 : 9);
   const fP = (p) => (p > 0 && isFinite(p) ? p.toLocaleString('en-US', { minimumFractionDigits: dec(p), maximumFractionDigits: dec(p) }) : '—');
   const fU = (x) => (isFinite(x) ? x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—');
   const fS = (x) => (x >= 0 ? '+' : '−') + fU(Math.abs(x));
   const fPct = (x, d) => (x >= 0 ? '+' : '−') + (Math.abs(x) * 100).toFixed(d == null ? 2 : d) + '%';
-  const fQ = (q) => (q >= 100 ? q.toFixed(1) : q >= 1 ? q.toFixed(3) : q >= 0.01 ? q.toFixed(4) : q.toFixed(6));
+  const fR = (r) => (r == null || !isFinite(r) ? '' : (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + 'R');
+  const fQ = (q) => (q >= 1e6 ? (q / 1e6).toFixed(2) + 'M' : q >= 1000 ? q.toFixed(0) : q >= 100 ? q.toFixed(1) : q >= 1 ? q.toFixed(3) : q >= 0.01 ? q.toFixed(4) : q.toFixed(6));
   const fT = (t) => { const d = new Date(t); const z = (n) => String(n).padStart(2, '0'); return d.getMonth() + 1 + '/' + d.getDate() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
+  const fHM = (t) => { const d = new Date(t); const z = (n) => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()); };
+  const fVol = (v) => (v >= 1e9 ? (v / 1e9).toFixed(1) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : fU(v));
   const cls = (x) => (x > 0 ? 'up' : x < 0 ? 'down' : '');
-  const raw = (p) => String(+p.toFixed(dec(p)));
-  const num = (v) => { const s = String(v == null ? '' : v).replace(/,/g, '').trim(); if (!/^\d+(\.\d+)?$/.test(s)) return null; const n = parseFloat(s); return isFinite(n) ? n : null; };
+  const roundP = (p) => { const d = dec(p); const m = Math.pow(10, d); return Math.round(p * m) / m; };
 
   let state;
   let bootSeen;
-  const S = { prices: {}, chg: {}, mode: 'connecting', stale: false, candles: [], chartErr: false, view: 'trade', form: null, lesson: null, catching: false, sheetKind: null, queue: [], vis: 60, off: 0 };
+  const S = { prices: {}, chg: {}, vol: {}, coins: E.ALL.slice(), mode: 'connecting', stale: false, candles: [], chartErr: false, view: 'trade', lesson: null, catching: false, sheetKind: null, queue: [], vis: 60, off: 0, cross: null, drag: null, barMode: 'trade' };
 
   function load() {
     let r = null;
@@ -1248,24 +1358,32 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     state = E.sanitize(r, Date.now());
     bootSeen = state.lastSeen;
     S.everLive = !!(r && r.everLive);
+    if (state.coinCache) S.coins = state.coinCache.list.slice();
   }
   function save() {
     state.lastSeen = Date.now();
-    for (const k of E.ALL) if (S.prices[k] > 0) state.lastPrices[k] = S.prices[k];
+    for (const k of Object.keys(S.prices)) if (S.prices[k] > 0) state.lastPrices[k] = S.prices[k];
+    const keep = {};
+    for (const k of watchList()) if (state.lastPrices[k]) keep[k] = state.lastPrices[k];
+    state.lastPrices = keep;
     try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, state, { everLive: S.everLive }))); } catch (e) { return; }
+  }
+  function watchList() {
+    const set = new Set(S.coins);
+    set.add(state.settings.sym);
+    for (const p of state.positions) set.add(p.sym);
+    for (const o of state.orders) set.add(o.sym);
+    return Array.from(set);
   }
 
   const gauss = () => { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); };
   const Sim = {
     m: {},
-    seeds: { BTC: 64280, ETH: 1674, SOL: 68.1, BNB: 610, XRP: 1.14, DOGE: 0.0921 },
-    sig: { BTC: 0.0007, ETH: 0.0009, SOL: 0.0012, BNB: 0.0008, XRP: 0.0012, DOGE: 0.0014 },
-    base: { BTC: 12, ETH: 180, SOL: 2500, BNB: 300, XRP: 150000, DOGE: 1500000 },
     init(now) {
       for (const sym of E.ALL) {
-        const seed = state.lastPrices[sym] > 0 ? state.lastPrices[sym] : this.seeds[sym];
+        const seed = state.lastPrices[sym] > 0 ? state.lastPrices[sym] : SEEDS[sym];
         const n = 7260;
-        const sig = this.sig[sym];
+        const sig = sym === 'BTC' ? 0.0007 : sym === 'ETH' ? 0.0009 : 0.0012;
         let vm = 1, drift = 0, left = 0;
         const rets = [], vms = [];
         for (let i = 0; i < n; i++) {
@@ -1278,13 +1396,14 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         closes[n - 1] = seed;
         for (let i = n - 1; i > 0; i--) closes[i - 1] = closes[i] / (1 + rets[i]);
         const t0 = Math.floor(now / 60000) * 60000;
+        const base = 1e6 / seed;
         const c1 = [];
         for (let i = 1; i < n; i++) {
           const o = closes[i - 1], c = closes[i];
           const w = sig * vms[i] * 0.45;
-          c1.push({ t: t0 - (n - 1 - i) * 60000, o, c, h: Math.max(o, c) * (1 + Math.abs(gauss()) * w), l: Math.min(o, c) * (1 - Math.abs(gauss()) * w), v: this.base[sym] * vms[i] * (0.5 + Math.random()) * (1 + Math.abs(rets[i]) / sig) });
+          c1.push({ t: t0 - (n - 1 - i) * 60000, o, c, h: Math.max(o, c) * (1 + Math.abs(gauss()) * w), l: Math.min(o, c) * (1 - Math.abs(gauss()) * w), v: base * vms[i] * (0.5 + Math.random()) * (1 + Math.abs(rets[i]) / sig) });
         }
-        this.m[sym] = { c1, price: seed, vm, drift, left, sig };
+        this.m[sym] = { c1, price: seed, vm, drift, left, sig, base };
       }
     },
     tick(now) {
@@ -1306,14 +1425,16 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         k.c = m.price;
         if (m.price > k.h) k.h = m.price;
         if (m.price < k.l) k.l = m.price;
-        k.v += ((this.base[sym] * m.vm) / 60) * (0.3 + Math.random() * 1.4) * (1 + (Math.abs(r) * 8) / m.sig);
+        k.v += ((m.base * m.vm) / 60) * (0.3 + Math.random() * 1.4) * (1 + (Math.abs(r) * 8) / m.sig);
         out[sym] = m.price;
         const ref = m.c1[Math.max(0, m.c1.length - 1440)];
         S.chg[sym] = m.price / ref.o - 1;
+        S.vol[sym] = m.base * m.price * 1440;
       }
       return out;
     },
     candles(sym, iv) {
+      if (!this.m[sym]) return [];
       const mins = IVS[iv][1];
       const c1 = this.m[sym].c1;
       if (mins === 1) return c1.slice(-300);
@@ -1334,8 +1455,17 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     { ws: 'wss://data-stream.binance.vision', rest: 'https://data-api.binance.vision' },
     { ws: 'wss://stream.binance.com:9443', rest: 'https://api.binance.com' }
   ];
-  const Live = { ws: null, host: 0, ok: false, last: 0, retry: 0, sub: null, id: 1, tries: 0 };
+  const Live = { ws: null, host: 0, ok: false, last: 0, retry: 0, kSub: null, tSubs: new Set(), id: 1, tries: 0 };
 
+  async function getJSON(path, ms) {
+    const ctl = new AbortController();
+    const tm = setTimeout(() => ctl.abort(), ms || 8000);
+    try {
+      const res = await fetch(HOSTS[Live.host].rest + path, { signal: ctl.signal });
+      if (!res.ok) throw new Error('http');
+      return await res.json();
+    } finally { clearTimeout(tm); }
+  }
   function parseKlines(rows) {
     if (!Array.isArray(rows)) return [];
     const out = [];
@@ -1346,40 +1476,56 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     }
     return out;
   }
-  async function fetchKlines(sym, iv, extra) {
-    const ctl = new AbortController();
-    const tm = setTimeout(() => ctl.abort(), 8000);
-    try {
-      const res = await fetch(HOSTS[Live.host].rest + '/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300'), { signal: ctl.signal });
-      if (!res.ok) throw new Error('http');
-      return parseKlines(await res.json());
-    } finally { clearTimeout(tm); }
+  const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
+  async function fetchTop() {
+    const rows = await getJSON('/api/v3/ticker/24hr?type=MINI', 9000);
+    if (!Array.isArray(rows)) throw new Error('bad');
+    const list = [];
+    for (const r of rows) {
+      if (!r || typeof r.symbol !== 'string' || !r.symbol.endsWith('USDT')) continue;
+      const base = r.symbol.slice(0, -4);
+      if (!E.SYM.test(base) || STABLE.has(base) || /(UP|DOWN|BULL|BEAR)$/.test(base)) continue;
+      const qv = +r.quoteVolume, last = +r.lastPrice, open = +r.openPrice;
+      if (!(qv > 0) || !(last > 0)) continue;
+      list.push({ base, qv, last, chg: open > 0 ? last / open - 1 : 0 });
+    }
+    list.sort((a, b) => b.qv - a.qv);
+    const top = list.slice(0, 10);
+    if (top.length < 5) throw new Error('few');
+    for (const x of top) { S.vol[x.base] = x.qv; S.chg[x.base] = x.chg; if (!(S.prices[x.base] > 0)) S.prices[x.base] = x.last; }
+    S.coins = top.map((x) => x.base);
+    state.coinCache = { t: Date.now(), list: S.coins.slice() };
   }
   async function loadChart() {
     const sym = state.settings.sym, iv = state.settings.interval;
-    if (S.mode === 'sim') { S.candles = Sim.candles(sym, iv); S.chartErr = false; drawChart(); return; }
+    if (S.mode === 'sim') { S.candles = Sim.candles(sym, iv); S.chartErr = !S.candles.length; markChart(); return; }
     if (S.mode !== 'live') return;
     S.candles = [];
     S.chartErr = false;
-    drawChart();
+    markChart();
     subKline();
     try {
       const rows = await fetchKlines(sym, iv);
       if (sym !== state.settings.sym || iv !== state.settings.interval) return;
       S.candles = rows;
     } catch (e) { S.chartErr = true; }
-    drawChart();
+    markChart();
   }
+  function wsSend(o) { try { Live.ws.send(JSON.stringify(Object.assign({ id: Live.id++ }, o))); return true; } catch (e) { return false; } }
   function subKline() {
     const ws = Live.ws;
     if (!ws || ws.readyState !== 1) return;
     const name = state.settings.sym.toLowerCase() + 'usdt@kline_' + state.settings.interval;
-    if (Live.sub === name) return;
-    try {
-      if (Live.sub) ws.send(JSON.stringify({ method: 'UNSUBSCRIBE', params: [Live.sub], id: Live.id++ }));
-      ws.send(JSON.stringify({ method: 'SUBSCRIBE', params: [name], id: Live.id++ }));
-      Live.sub = name;
-    } catch (e) { Live.sub = null; }
+    if (Live.kSub === name) return;
+    if (Live.kSub) wsSend({ method: 'UNSUBSCRIBE', params: [Live.kSub] });
+    if (wsSend({ method: 'SUBSCRIBE', params: [name] })) Live.kSub = name;
+  }
+  function syncTickers() {
+    const ws = Live.ws;
+    if (!ws || ws.readyState !== 1) return;
+    const want = watchList().map((s) => s.toLowerCase() + 'usdt@miniTicker');
+    const add = want.filter((n) => !Live.tSubs.has(n));
+    if (add.length && wsSend({ method: 'SUBSCRIBE', params: add })) for (const n of add) Live.tSubs.add(n);
   }
   function connect() {
     let ws;
@@ -1393,16 +1539,16 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       Live.retry = Math.min(30000, (Live.retry || 2000) * 2);
       setTimeout(connect, Live.retry);
     };
-    try {
-      ws = new WebSocket(host.ws + '/stream?streams=' + E.ALL.map((s) => s.toLowerCase() + 'usdt@miniTicker').join('/'));
-    } catch (e) { fail(); return; }
+    const names = watchList().map((s) => s.toLowerCase() + 'usdt@miniTicker');
+    try { ws = new WebSocket(host.ws + '/stream?streams=' + names.join('/')); } catch (e) { fail(); return; }
     let opened = false;
     const tm = setTimeout(() => { if (!opened) { try { ws.close(); } catch (e) { return; } } }, 5000);
     ws.onopen = () => {
       opened = true;
       clearTimeout(tm);
       Live.ws = ws;
-      Live.sub = null;
+      Live.kSub = null;
+      Live.tSubs = new Set(names);
       Live.tries = 0;
       Live.retry = 0;
       const prev = Live.last;
@@ -1418,11 +1564,12 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (!d || typeof d !== 'object') return;
       Live.last = Date.now();
       if (S.stale) setMode('live', false);
-      if (d.e === '24hrMiniTicker' && typeof d.s === 'string') {
-        const sym = d.s.replace(/USDT$/, '');
-        const c = +d.c, o = +d.o;
-        if (!E.ALL.includes(sym) || !(c > 0) || !isFinite(c)) return;
+      if (d.e === '24hrMiniTicker' && typeof d.s === 'string' && d.s.endsWith('USDT')) {
+        const sym = d.s.slice(0, -4);
+        const c = +d.c, o = +d.o, q = +d.q;
+        if (!E.SYM.test(sym) || !(c > 0) || !isFinite(c)) return;
         if (o > 0) S.chg[sym] = c / o - 1;
+        if (q > 0) S.vol[sym] = q;
         onTick(sym, c);
       } else if (d.e === 'kline' && d.k && typeof d.s === 'string') {
         if (d.s !== state.settings.sym + 'USDT' || d.k.i !== state.settings.interval) return;
@@ -1431,7 +1578,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         const last = S.candles[S.candles.length - 1];
         if (last && last.t === k.t) S.candles[S.candles.length - 1] = k;
         else if (!last || k.t > last.t) { S.candles.push(k); if (S.candles.length > 320) S.candles.shift(); }
-        S.chartDirty = true;
+        markChart();
       }
     };
     ws.onclose = () => {
@@ -1448,16 +1595,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     S.mode = mode;
     S.stale = !!stale;
     const el = $('#feed');
+    if (!el) return;
     el.dataset.m = mode === 'live' && !stale ? 'live' : mode === 'down' || stale ? 'down' : mode;
-    $('#feedTxt').textContent = mode === 'sim' ? '練習行情' : mode === 'connecting' ? '連線中' : stale || mode === 'down' ? '重新連線中' : '即時行情';
-    syncMode();
-  }
-  function syncMode() {
-    const n = $('#modeNote');
-    if (!n) return;
-    const down = S.mode === 'down' || (S.mode === 'live' && S.stale);
-    n.hidden = !(S.mode === 'sim' || down);
-    n.firstChild.textContent = down ? '連不上即時行情，正在重試。連上之前不能下單。' : '現在是練習行情：價格由系統模擬，不是真實市場的價格。';
+    $('#feedTxt').textContent = mode === 'sim' ? '練習行情' : mode === 'connecting' ? '連線中' : stale || mode === 'down' ? '重新連線' : '即時';
   }
   async function onLiveReady(from, first) {
     if (first && !S.everLive) {
@@ -1471,6 +1611,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       save();
     }
     setMode('live', false);
+    syncTickers();
     S.catching = true;
     try { await catchUp(from); } catch (e) { S.catchErr = true; }
     S.catching = false;
@@ -1489,21 +1630,22 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       for (const k of rows) for (const ev of E.onCandle(state, sym, k, S.prices)) evs.push(ev);
     }
     if (evs.length) {
-      S.queue.push({ kind: 'info', title: '你不在的時候', lines: evs.map((ev) => (ev.type === 'fill' ? ev.pos.sym + ' 限價單在 ' + fP(ev.pos.entry) + ' 成交' : ev.trade.sym + ' ' + WHY[ev.trade.why] + '，' + (ev.trade.pnl >= 0 ? '賺 ' : '賠 ') + fU(Math.abs(ev.trade.pnl)) + ' USDT')) });
+      S.queue.push({ kind: 'info', title: '你不在的時候', lines: evs.map((ev) => (ev.type === 'fill' ? ev.pos.sym + ' 掛單在 ' + fP(ev.pos.entry) + ' 成交' : ev.trade.sym + ' ' + WHY[ev.trade.why] + '，' + (ev.trade.pnl >= 0 ? '賺 ' : '賠 ') + fU(Math.abs(ev.trade.pnl)) + ' USDT')) });
       afterClose();
       save();
     }
   }
   function startSim() {
+    S.coins = E.ALL.slice();
     Sim.init(Date.now());
     for (const sym of E.ALL) S.prices[sym] = Sim.m[sym].price;
+    if (!Sim.m[state.settings.sym]) state.settings.sym = 'BTC';
     setMode('sim', false);
     setInterval(() => {
-      const now = Date.now();
-      const px = Sim.tick(now);
+      const px = Sim.tick(Date.now());
       for (const sym of E.ALL) onTick(sym, px[sym], true);
       S.candles = Sim.candles(state.settings.sym, state.settings.interval);
-      S.chartDirty = true;
+      markChart();
     }, 1000);
     loadChart();
     render();
@@ -1517,13 +1659,13 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const now = Date.now();
       if (now < last.t + span) { last.c = price; if (price > last.h) last.h = price; if (price < last.l) last.l = price; }
       else if (now < last.t + span * 2) S.candles.push({ t: last.t + span, o: price, h: price, l: price, c: price, v: 0 });
-      S.chartDirty = true;
+      markChart();
     }
     if (!S.catching) {
       const evs = E.onPrice(state, sym, price, Date.now(), S.prices);
       if (evs.length) {
         for (const ev of evs) {
-          if (ev.type === 'fill') toast(ev.pos.sym + ' 限價單成交');
+          if (ev.type === 'fill') { autoBracket(ev.pos); toast(ev.pos.sym + ' 掛單在 ' + fP(ev.pos.entry) + ' 成交'); }
           else S.queue.push({ kind: 'review', trade: ev.trade });
         }
         afterClose();
@@ -1539,15 +1681,18 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (!d) return;
     if (d.type === 'refill') S.queue.push({ kind: 'info', title: '資金已補回 1,000 USDT', lines: ['你的總資產跌到起始資金的六成以下，系統幫你重新開始。', '回頭看「成績」頁的交易紀錄，找出賠最多的那幾筆做錯了什麼。'] });
     else S.queue.push({ kind: 'info', title: '段位降為 ' + state.rank + ' ' + E.RANKS[state.rank].name, lines: [d.cause === 'liq' ? '最近 10 筆裡有 2 筆被強制平倉，代表槓桿用得太大。' : '總資產跌到這個段位資金的六成以下。', '所有持倉已經平倉，資金重設為 ' + fU(E.RANKS[state.rank].cap) + ' USDT。重新達成條件就能再升回去。'] });
-    if (!E.RANKS[state.rank].syms.includes(state.settings.sym)) { state.settings.sym = 'BTC'; loadChart(); }
+    if (state.settings.lev > E.RANKS[state.rank].maxLev) state.settings.lev = 1;
   }
   function flushQueue() {
-    if (S.sheetKind || !S.queue.length) return;
+    if (S.sheetKind || S.lesson || !S.queue.length) return;
     const q = S.queue.shift();
     if (q.kind === 'review') showReview(q.trade, true);
     else showInfo(q.title, q.lines);
   }
   const canTrade = (sym) => S.prices[sym] > 0 && (S.mode === 'sim' || (S.mode === 'live' && !S.stale && !S.catching));
+  const lessonDone = (id) => !!(state.lessons[id] && state.lessons[id].done);
+  const limitOK = () => state.rank >= 2 || lessonDone(3);
+  const curPos = () => state.positions.filter((p) => p.sym === state.settings.sym);
 
   function ctxNow() {
     const k = S.candles;
@@ -1561,10 +1706,43 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const va = vs / 20;
     return { above: p > sum / 20, chg: p / k[n - 21].c - 1, volR: va > 0 ? Math.max(k[n - 1].v, k[n - 2].v) / va : null, ma: sum / 20 };
   }
+  function atrDist(price) {
+    const k = S.candles;
+    let d = 0;
+    if (k.length >= 15) { for (let i = k.length - 15; i < k.length - 1; i++) d += k[i].h - k[i].l; d /= 14; }
+    return Math.max(d * 1.5, price * 0.002);
+  }
+  function autoBracket(p) {
+    if (state.rank < 2 || p.sl != null || p.sym !== state.settings.sym) return;
+    const px = S.prices[p.sym] || p.entry;
+    let dist = atrDist(px);
+    if (E.isLev(p) && p.lev > 1) { const room = p.entry * (1 / p.lev - E.MMR) * 0.8; if (dist > room) dist = room; }
+    const long = p.side === 'long';
+    const sl = roundP(long ? p.entry - dist : p.entry + dist);
+    const tp = roundP(long ? p.entry + dist * 2 : p.entry - dist * 2);
+    const okSl = long ? sl < px : sl > px;
+    const okTp = long ? tp > px : tp < px;
+    E.setStops(state, p.id, okSl ? sl : null, okTp ? tp : null, px, true);
+  }
+  function breakeven(p) {
+    const f = E.feeRate(p);
+    return p.side === 'long' ? p.entry * (1 + f) / (1 - f) : p.entry * (1 - f) / (1 + f);
+  }
+  function posR(p, px) {
+    if (!(p.r0 > 0)) return null;
+    return E.posPnl(p, px) / p.r0;
+  }
+  function orderAmount() {
+    const eq = E.equity(state, S.prices);
+    const lev = Math.min(state.settings.lev, E.RANKS[state.rank].maxLev);
+    const want = Math.floor(eq * state.settings.amtPct * 100) / 100;
+    return { amount: Math.min(want, E.maxAmount(state.cash, lev, 'long')), lev, eq };
+  }
 
-  let cvs, ctx2;
+  function markChart() { S.chartDirty = true; }
+  const G = { pts: new Map(), lines: [], geom: null };
   function drawChart() {
-    cvs = $('#chart');
+    const cvs = $('#chart');
     if (!cvs) return;
     const msg = $('#chartMsg');
     const wrap = cvs.parentElement;
@@ -1572,16 +1750,17 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (!W || !H) return;
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     if (cvs.width !== Math.round(W * dpr) || cvs.height !== Math.round(H * dpr)) { cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr); }
-    ctx2 = cvs.getContext('2d');
-    const g = ctx2;
+    const g = cvs.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
+    G.lines = [];
     const all = S.candles;
-    if (all.length < 2) { msg.hidden = false; msg.textContent = S.chartErr ? '圖表資料載入失敗，價格仍會更新' : '圖表載入中'; return; }
+    if (all.length < 2) { G.geom = null; msg.hidden = false; msg.textContent = S.chartErr ? '圖表資料載入失敗，價格仍會更新' : '圖表載入中'; return; }
     msg.hidden = true;
     const cs = getComputedStyle(document.documentElement);
     const col = (n) => cs.getPropertyValue(n).trim();
-    const up = col('--up'), down = col('--down'), line = col('--line'), muted = col('--muted'), ink = col('--ink'), accent = col('--accent');
+    const up = col('--up'), down = col('--down'), line = col('--line'), muted = col('--muted'), ink = col('--ink'), accent = col('--accent'), bg = col('--bg');
+    const font = cs.getPropertyValue('--font');
     const maxVis = Math.max(20, Math.min(240, all.length));
     if (S.vis > maxVis) S.vis = maxVis;
     S.off = Math.max(0, Math.min(S.off, all.length - Math.min(S.vis, all.length)));
@@ -1590,8 +1769,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const k = all.slice(start, end);
     const N = k.length;
     const lastP = all[all.length - 1].c;
-    const padR = 58, padT = 10, volH = 40, gap = 12;
-    const pw = W - padR - 4, ph = H - padT - volH - gap - 4;
+    const padR = 66, padT = 26, volH = 34, padB = 20;
+    const pw = W - padR, ph = H - padT - volH - padB - 8;
     let lo = Infinity, hi = -Infinity, vmax = 0;
     for (const c of k) { if (c.l < lo) lo = c.l; if (c.h > hi) hi = c.h; if (c.v > vmax) vmax = c.v; }
     let ma = null;
@@ -1602,26 +1781,33 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         let s = 0;
         for (let j = i - 19; j <= i; j++) s += all[j].c;
         ma.push(s / 20);
-        if (s / 20 < lo) lo = s / 20;
-        if (s / 20 > hi) hi = s / 20;
+        lo = Math.min(lo, s / 20); hi = Math.max(hi, s / 20);
       }
     }
-    const pad = (hi - lo) * 0.08 || hi * 0.001;
+    const pad = (hi - lo) * 0.1 || hi * 0.001;
     lo -= pad; hi += pad;
     const y = (p) => padT + ((hi - p) / (hi - lo)) * ph;
-    const step = pw / S.vis;
-    const x0 = 4 + (S.vis - N) * step;
-    const bw = Math.max(1, Math.min(14, step * 0.62));
-    g.font = '10px ' + cs.getPropertyValue('--font');
+    const yToP = (yy) => hi - ((yy - padT) / ph) * (hi - lo);
+    const step = pw / (S.vis + 4);
+    const x0 = (S.vis - N) * step;
+    const bw = Math.max(1, Math.min(14, step * 0.64));
+    const span = IVS[state.settings.interval][1] * 60000;
+    const xOfT = (t) => { for (let i = N - 1; i >= 0; i--) if (t >= k[i].t) return t < k[i].t + span || i === N - 1 ? x0 + i * step + step / 2 : null; return null; };
+    G.geom = { y, yToP, padT, ph, pw, W, H, step, x0, N };
+    g.font = '10px ' + font;
     g.textBaseline = 'middle';
     g.lineWidth = 1;
-    for (let i = 0; i <= 3; i++) {
-      const p = lo + ((hi - lo) * i) / 3;
+    for (let i = 0; i <= 4; i++) {
+      const p = lo + ((hi - lo) * i) / 4;
       const yy = Math.round(y(p)) + 0.5;
       g.strokeStyle = line;
-      g.beginPath(); g.moveTo(4, yy); g.lineTo(4 + pw, yy); g.stroke();
-      if (Math.abs(yy - y(lastP)) > 13) { g.fillStyle = muted; g.fillText(fP(p), W - padR + 6, yy); }
+      g.beginPath(); g.moveTo(0, yy); g.lineTo(pw, yy); g.stroke();
+      if (Math.abs(yy - y(lastP)) > 12) { g.fillStyle = muted; g.fillText(fP(p), pw + 6, yy); }
     }
+    g.fillStyle = muted;
+    g.textAlign = 'center';
+    for (let i = N - 1; i >= 0; i -= Math.max(1, Math.round(70 / step))) g.fillText(fHM(k[i].t), x0 + i * step + step / 2, H - padB / 2);
+    g.textAlign = 'left';
     k.forEach((c, i) => {
       const cx = x0 + i * step + step / 2;
       const rise = c.c >= c.o;
@@ -1629,184 +1815,329 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       g.beginPath(); g.moveTo(Math.round(cx) + 0.5, y(c.h)); g.lineTo(Math.round(cx) + 0.5, y(c.l)); g.stroke();
       const yo = y(c.o), yc = y(c.c);
       g.fillRect(cx - bw / 2, Math.min(yo, yc), bw, Math.max(1, Math.abs(yc - yo)));
-      if (vmax > 0) {
-        const vh = (c.v / vmax) * volH;
-        g.globalAlpha = 0.35;
-        g.fillRect(cx - bw / 2, H - 4 - vh, bw, vh);
-        g.globalAlpha = 1;
-      }
+      if (vmax > 0) { const vh = (c.v / vmax) * volH; g.globalAlpha = 0.3; g.fillRect(cx - bw / 2, H - padB - vh, bw, vh); g.globalAlpha = 1; }
     });
     if (ma) {
-      g.strokeStyle = accent;
-      g.lineWidth = 1.25;
-      g.beginPath();
-      let started = false;
-      ma.forEach((v, i) => { if (v == null) return; const cx = x0 + i * step + step / 2; if (!started) { g.moveTo(cx, y(v)); started = true; } else g.lineTo(cx, y(v)); });
-      g.stroke();
-      g.lineWidth = 1;
+      g.strokeStyle = accent; g.lineWidth = 1.25; g.beginPath();
+      let st = false;
+      ma.forEach((v, i) => { if (v == null) return; const cx = x0 + i * step + step / 2; if (!st) { g.moveTo(cx, y(v)); st = true; } else g.lineTo(cx, y(v)); });
+      g.stroke(); g.lineWidth = 1;
     }
-    const tagLine = (p, color, label, dash) => {
-      if (!(p > lo && p < hi)) return;
-      const yy = Math.round(y(p)) + 0.5;
+    const sym = state.settings.sym;
+    const tri = (cx, cy, upDir, color) => { g.fillStyle = color; g.beginPath(); if (upDir) { g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 8); g.lineTo(cx + 5, cy + 8); } else { g.moveTo(cx, cy); g.lineTo(cx - 5, cy - 8); g.lineTo(cx + 5, cy - 8); } g.closePath(); g.fill(); };
+    for (const t of state.trades.slice(-30)) {
+      if (t.sym !== sym) continue;
+      const xe = xOfT(t.t0), xx = xOfT(t.t1);
+      if (xe != null && t.entry > lo && t.entry < hi) { g.globalAlpha = 0.45; tri(xe, t.side === 'long' ? y(t.entry) + 3 : y(t.entry) - 3, t.side === 'long', t.side === 'long' ? up : down); g.globalAlpha = 1; }
+      if (xx != null && t.exit > lo && t.exit < hi) { g.strokeStyle = t.pnl >= 0 ? up : down; g.lineWidth = 1.5; g.beginPath(); g.arc(xx, y(t.exit), 3.5, 0, 7); g.stroke(); g.lineWidth = 1; }
+    }
+    const tagBox = (yy, text, color, fill) => {
+      g.font = '600 10px ' + font;
+      const w = Math.max(padR - 4, g.measureText(text).width + 10);
+      g.fillStyle = fill ? color : bg;
+      g.fillRect(pw + 2, yy - 9, w, 18);
+      if (!fill) { g.strokeStyle = color; g.strokeRect(pw + 2.5, yy - 8.5, w - 1, 17); }
+      g.fillStyle = fill ? '#fff' : color;
+      g.fillText(text, pw + 7, yy);
+      g.font = '10px ' + font;
+    };
+    const hline = (p, color, dash, label, kind, id) => {
+      const inside = p > lo && p < hi;
+      const yy = inside ? Math.round(y(p)) + 0.5 : p >= hi ? padT + 6.5 : padT + ph - 5.5;
       g.strokeStyle = color;
       g.setLineDash(dash);
-      g.beginPath(); g.moveTo(4, yy); g.lineTo(4 + pw, yy); g.stroke();
+      g.globalAlpha = inside ? 1 : 0.5;
+      g.beginPath(); g.moveTo(0, yy); g.lineTo(pw, yy); g.stroke();
       g.setLineDash([]);
-      g.fillStyle = color;
-      g.fillText(label, 8, yy - 8);
+      g.globalAlpha = 1;
+      if (label) {
+        g.font = '600 10px ' + font;
+        const tw = g.measureText(label).width;
+        g.fillStyle = bg; g.fillRect(6, yy - 16, tw + 8, 13);
+        g.fillStyle = color; g.fillText(label, 10, yy - 9.5);
+        g.font = '10px ' + font;
+      }
+      tagBox(yy, fP(p), color, kind === 'entry');
+      if (kind && kind !== 'entry') G.lines.push({ kind, id, y: yy, price: p });
     };
-    for (const p of state.positions) {
-      if (p.sym !== state.settings.sym) continue;
-      tagLine(p.entry, ink, '進場', [2, 3]);
-      if (p.sl != null) tagLine(p.sl, down, '停損', [5, 4]);
-      if (p.tp != null) tagLine(p.tp, up, '停利', [5, 4]);
+    for (const o of state.orders) {
+      if (o.sym !== sym) continue;
+      const p = S.drag && S.drag.kind === 'ord' && S.drag.id === o.id ? S.drag.price : o.limit;
+      hline(p, accent, [4, 3], '掛單' + (o.side === 'long' ? '買漲 ' : '買跌 ') + fU(o.amount) + '　按住可拖', 'ord', o.id);
     }
-    for (const o of state.orders) if (o.sym === state.settings.sym) tagLine(o.limit, accent, '掛單', [2, 3]);
-    const last = lastP;
-    if (!(last > lo && last < hi)) return;
-    const yl = Math.round(y(last)) + 0.5;
-    g.strokeStyle = ink;
-    g.setLineDash([1, 3]);
-    g.beginPath(); g.moveTo(4, yl); g.lineTo(4 + pw, yl); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = ink;
-    const lw = g.measureText(fP(last)).width + 10;
-    g.fillRect(W - padR + 2, yl - 8, lw, 16);
-    g.fillStyle = '#fff';
-    g.fillText(fP(last), W - padR + 7, yl);
+    for (const p of curPos()) {
+      const eq = E.equity(state, S.prices);
+      const xe = xOfT(p.t0);
+      if (xe != null && p.entry > lo && p.entry < hi) tri(xe, p.side === 'long' ? y(p.entry) + 3 : y(p.entry) - 3, p.side === 'long', p.side === 'long' ? up : down);
+      hline(p.entry, ink, [2, 3], '進場 ' + (p.side === 'long' ? '買漲' : '買跌'), 'entry', p.id);
+      if (state.rank >= 2) {
+        const sl = S.drag && S.drag.kind === 'sl' && S.drag.id === p.id ? S.drag.price : p.sl;
+        const tp = S.drag && S.drag.kind === 'tp' && S.drag.id === p.id ? S.drag.price : p.tp;
+        if (sl != null) { const loss = Math.abs(p.entry - sl) * p.qty; hline(sl, down, [6, 4], '停損 −' + fU(loss) + '（總資產 ' + (loss / eq * 100).toFixed(2) + '%）', 'sl', p.id); }
+        if (tp != null) { const gain = Math.abs(tp - p.entry) * p.qty; const rr = sl != null && sl !== p.entry ? '　盈虧比 ' + (Math.abs(tp - p.entry) / Math.abs(p.entry - sl)).toFixed(1) : ''; hline(tp, up, [6, 4], '停利 +' + fU(gain) + rr, 'tp', p.id); }
+      }
+    }
+    const yl = Math.round(y(lastP)) + 0.5;
+    if (lastP > lo && lastP < hi) {
+      g.strokeStyle = ink; g.setLineDash([1, 3]); g.beginPath(); g.moveTo(0, yl); g.lineTo(pw, yl); g.stroke(); g.setLineDash([]);
+      tagBox(yl, fP(lastP), ink, true);
+    }
+    if (S.cross) {
+      const cx = Math.max(0, Math.min(pw, S.cross.x));
+      const cy = Math.max(padT, Math.min(padT + ph, S.cross.y));
+      let idx = Math.floor((cx - x0) / step);
+      idx = Math.max(0, Math.min(N - 1, idx));
+      const kc = k[idx];
+      const sx = x0 + idx * step + step / 2;
+      const price = roundP(yToP(cy));
+      S.cross.price = price;
+      g.strokeStyle = muted; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(sx + 0.5, padT); g.lineTo(sx + 0.5, H - padB); g.stroke();
+      g.beginPath(); g.moveTo(0, Math.round(cy) + 0.5); g.lineTo(pw, Math.round(cy) + 0.5); g.stroke();
+      g.setLineDash([]);
+      tagBox(Math.round(cy) + 0.5, fP(price), accent, true);
+      g.font = '600 10px ' + font;
+      const tl = fT(kc.t);
+      const tw = g.measureText(tl).width + 10;
+      g.fillStyle = accent; g.fillRect(Math.min(pw - tw, Math.max(0, sx - tw / 2)), H - padB + 1, tw, padB - 2);
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(tl, Math.min(pw - tw / 2, Math.max(tw / 2, sx)), H - padB / 2); g.textAlign = 'left';
+      const rise = kc.c >= kc.o;
+      let xx = 2;
+      g.font = '10px ' + font;
+      for (const [lab, v] of [['開', kc.o], ['高', kc.h], ['低', kc.l], ['收', kc.c]]) {
+        g.fillStyle = muted; g.fillText(lab, xx, 11); xx += g.measureText(lab).width + 3;
+        g.fillStyle = rise ? up : down; const t = fP(v); g.fillText(t, xx, 11); xx += g.measureText(t).width + 8;
+      }
+      g.fillStyle = rise ? up : down; g.fillText(fPct(kc.c / kc.o - 1), xx, 11);
+    } else if (!state.settings.gestured) {
+      g.fillStyle = muted; g.font = '11px ' + font;
+      g.fillText('左右滑看紀錄　長按看價格　兩指縮放', 2, 11);
+    }
   }
-  const G = { pts: new Map(), d0: 1, vis0: 60, x0: 0, off0: 0 };
+
   function bindChart() {
     const c = $('#chart');
     if (!c || c.dataset.bound) return;
     c.dataset.bound = '1';
+    const T = { mode: null, sx: 0, sy: 0, off0: 0, moved: false, timer: 0, d0: 1, vis0: 60, wasCross: false };
+    const rel = (e) => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     const dist = () => { const a = Array.from(G.pts.values()); return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1; };
-    const anchor = (x) => { G.x0 = x; G.off0 = S.off; };
+    const gestured = () => { if (!state.settings.gestured) { state.settings.gestured = true; save(); } };
     c.addEventListener('pointerdown', (e) => {
-      G.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      try { c.setPointerCapture(e.pointerId); } catch (err) { G.cap = false; }
-      if (G.pts.size === 1) anchor(e.clientX);
-      if (G.pts.size === 2) { G.d0 = dist(); G.vis0 = S.vis; }
+      const p = rel(e);
+      G.pts.set(e.pointerId, p);
+      try { c.setPointerCapture(e.pointerId); } catch (err) { T.cap = false; }
+      clearTimeout(T.timer);
+      if (G.pts.size === 2) { T.mode = 'pinch'; T.d0 = dist(); T.vis0 = S.vis; S.drag = null; return; }
+      if (G.pts.size > 2) return;
+      T.sx = p.x; T.sy = p.y; T.moved = false; T.off0 = S.off; T.wasCross = !!S.cross;
+      const hit = G.geom && !S.cross ? G.lines.slice().sort((a, b) => Math.abs(a.y - p.y) - Math.abs(b.y - p.y)).find((l) => Math.abs(l.y - p.y) <= 16) : null;
+      if (hit) { T.mode = 'drag'; S.drag = { kind: hit.kind, id: hit.id, price: hit.price }; markChart(); return; }
+      if (S.cross) { T.mode = 'cross'; return; }
+      T.mode = 'pan';
+      T.timer = setTimeout(() => { if (!T.moved && T.mode === 'pan') { T.mode = 'cross'; S.cross = { x: T.sx, y: T.sy }; gestured(); drawChart(); renderBar(); } }, 380);
     });
     c.addEventListener('pointermove', (e) => {
       if (!G.pts.has(e.pointerId)) return;
-      G.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const p = rel(e);
+      G.pts.set(e.pointerId, p);
       const n = S.candles.length;
-      if (n < 2) return;
-      if (G.pts.size >= 2) S.vis = Math.max(20, Math.min(Math.max(20, Math.min(240, n)), Math.round((G.vis0 * G.d0) / dist())));
-      else S.off = Math.max(0, Math.min(Math.max(0, n - S.vis), G.off0 + Math.round((e.clientX - G.x0) / ((c.clientWidth - 62) / S.vis))));
-      drawChart();
+      if (!G.geom || n < 2) return;
+      if (Math.abs(p.x - T.sx) > 7 || Math.abs(p.y - T.sy) > 7) T.moved = true;
+      if (T.mode === 'pinch' && G.pts.size >= 2) { S.vis = Math.max(20, Math.min(Math.max(20, Math.min(240, n)), Math.round((T.vis0 * T.d0) / dist()))); gestured(); markChart(); }
+      else if (T.mode === 'drag') { S.drag.price = roundP(G.geom.yToP(Math.max(G.geom.padT, Math.min(G.geom.padT + G.geom.ph, p.y)))); markChart(); }
+      else if (T.mode === 'cross') { if (T.moved || !T.wasCross) { S.cross = { x: p.x, y: p.y }; drawChart(); const el = $('#crossPx'); if (el) el.textContent = fP(S.cross.price); } }
+      else if (T.mode === 'pan' && T.moved) { clearTimeout(T.timer); S.off = Math.max(0, Math.min(Math.max(0, n - S.vis), T.off0 + Math.round((p.x - T.sx) / G.geom.step))); gestured(); markChart(); }
     });
     const up = (e) => {
+      if (!G.pts.has(e.pointerId)) return;
       G.pts.delete(e.pointerId);
-      if (G.pts.size === 1) anchor(Array.from(G.pts.values())[0].x);
+      clearTimeout(T.timer);
+      if (T.mode === 'pinch') { if (G.pts.size === 0) T.mode = null; return; }
+      if (T.mode === 'drag') { commitDrag(); T.mode = null; return; }
+      if (T.mode === 'cross') { if (T.wasCross && !T.moved) hideCross(); else renderBar(); }
+      T.mode = null;
     };
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', up);
-    c.addEventListener('dblclick', () => { S.vis = 60; S.off = 0; drawChart(); });
-    c.addEventListener('wheel', (e) => { e.preventDefault(); S.vis = Math.max(20, Math.min(240, Math.round(S.vis * (e.deltaY > 0 ? 1.1 : 0.9)))); drawChart(); }, { passive: false });
+    c.addEventListener('dblclick', () => { S.vis = 60; S.off = 0; hideCross(); markChart(); });
+    c.addEventListener('wheel', (e) => { e.preventDefault(); S.vis = Math.max(20, Math.min(240, Math.round(S.vis * (e.deltaY > 0 ? 1.1 : 0.9)))); markChart(); }, { passive: false });
+    c.addEventListener('contextmenu', (e) => e.preventDefault());
   }
-  function drawSpark() {
-    const c = $('#spark');
-    if (!c) return;
-    const W = c.clientWidth, H = c.clientHeight;
-    const dpr = Math.min(3, window.devicePixelRatio || 1);
-    c.width = W * dpr; c.height = H * dpr;
-    const g = c.getContext('2d');
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const pts = state.eqHist.map((p) => p.e).concat([E.equity(state, S.prices)]);
-    const cs = getComputedStyle(document.documentElement);
-    if (pts.length < 3) { g.fillStyle = cs.getPropertyValue('--muted'); g.font = '12px ' + cs.getPropertyValue('--font'); g.fillText('完成幾筆交易後，這裡會畫出你的資產變化', 0, H / 2); return; }
-    let lo = Math.min(...pts), hi = Math.max(...pts);
-    if (hi === lo) { hi += 1; lo -= 1; }
-    const x = (i) => (i / (pts.length - 1)) * (W - 6) + 1;
-    const y = (v) => 4 + ((hi - v) / (hi - lo)) * (H - 10);
-    g.beginPath();
-    pts.forEach((v, i) => (i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))));
-    g.strokeStyle = cs.getPropertyValue('--ink');
-    g.lineWidth = 1.25;
-    g.stroke();
-    g.lineTo(x(pts.length - 1), H); g.lineTo(x(0), H); g.closePath();
-    g.globalAlpha = 0.05; g.fillStyle = cs.getPropertyValue('--ink'); g.fill(); g.globalAlpha = 1;
-    g.beginPath(); g.arc(x(pts.length - 1), y(pts[pts.length - 1]), 3, 0, 7); g.fillStyle = cs.getPropertyValue('--accent'); g.fill();
+  function hideCross() { S.cross = null; renderBar(); markChart(); }
+  function commitDrag() {
+    const d = S.drag;
+    S.drag = null;
+    if (!d) return;
+    const cur = S.prices[state.settings.sym];
+    let r;
+    if (d.kind === 'ord') r = E.modifyOrder(state, d.id, d.price, cur);
+    else {
+      const p = state.positions.find((x) => x.id === d.id);
+      if (!p) return markChart();
+      r = E.setStops(state, p.id, d.kind === 'sl' ? d.price : p.sl, d.kind === 'tp' ? d.price : p.tp, cur);
+    }
+    if (!r.ok) toast(r.err);
+    else { save(); toast(d.kind === 'ord' ? '掛單改到 ' + fP(d.price) : (d.kind === 'sl' ? '停損' : '停利') + '改到 ' + fP(d.price)); }
+    markChart();
+    tickUI();
   }
 
-  function lessonOpen(l) {
-    if (l.rank > state.rank) return false;
-    if (l.id === 1) return true;
-    const prev = state.lessons[l.id - 1];
-    return !!(prev && prev.done);
-  }
-  const lessonDone = (id) => !!(state.lessons[id] && state.lessons[id].done);
-  const limitOK = () => state.rank >= 2 || lessonDone(3);
-  function nextStep() {
-    for (const l of LESSONS) {
-      if (lessonDone(l.id)) continue;
-      if (!lessonOpen(l)) break;
-      const st = state.lessons[l.id];
-      if (st && st.read && l.task && !state.flags[l.task.flag]) return { small: '第 ' + l.id + ' 關任務', text: l.task.text, lesson: l.id };
-      return { small: '下一步', text: '第 ' + l.id + ' 關　' + l.title, lesson: l.id };
+  function renderBar() {
+    const bar = $('#bar');
+    if (!bar) return;
+    const sym = state.settings.sym;
+    if (S.cross) {
+      S.barMode = 'cross';
+      const pos = curPos()[0];
+      const price = S.cross.price || 0;
+      const cur = S.prices[sym];
+      const btns = [];
+      if (pos && state.rank >= 2) {
+        btns.push('<button class="act down-o" data-act="xsl">設為停損</button>');
+        btns.push('<button class="act up-o" data-act="xtp">設為停利</button>');
+      }
+      if (!limitOK()) btns.push('<button class="act" data-act="xlocked">掛單（第 3 關）</button>');
+      else if (price && cur && price < cur) btns.push('<button class="act solid" data-act="xlimit" data-id="long">在此掛單買漲</button>');
+      else if (price && cur && price > cur) btns.push(E.canShort(state) ? '<button class="act solid" data-act="xlimit" data-id="short">在此掛單買跌</button>' : '<button class="act" data-act="xlocked2">掛單買跌（第 5 關）</button>');
+      bar.innerHTML = '<div class="crossbar"><span class="cp"><small>十字線</small><b id="crossPx">' + fP(price) + '</b></span>' + btns.join('') + '<button class="x" data-act="xclose" aria-label="關閉十字線">✕</button></div>';
+      return;
     }
-    const r = E.requirements(state);
-    if (r.ready) return { small: '可以升級了', text: state.rank >= 5 ? '你已達成結業條件' : '升上段位 ' + (state.rank + 1) + ' ' + E.RANKS[state.rank + 1].name, go: 'learn' };
-    const u = r.list.find((x) => !x.done);
-    if (u) return { small: '升段進度', text: u.label + '　' + u.prog, go: 'learn' };
-    return null;
+    S.barMode = 'trade';
+    const { amount, lev } = orderAmount();
+    const pos = curPos();
+    const short = E.canShort(state);
+    bar.innerHTML = '<div class="tradebar"><button class="amt" data-act="amount"><small>每筆' + (lev > 1 ? ' ' + lev + 'x' : '') + '</small><b>' + Math.round(state.settings.amtPct * 100) + '%</b><span id="amtUsd">' + fU(amount) + '</span></button>' +
+      '<button class="act buy" data-act="buy" data-id="long">買漲</button>' +
+      '<button class="act sell' + (short ? '' : ' locked') + '" data-act="buy" data-id="short">買跌' + (short ? '' : '<small>第 5 關解鎖</small>') + '</button>' +
+      (pos.length ? '<button class="act flat" data-act="flat">平倉</button>' : '') + '</div>';
+  }
+
+  function tradeBuy(side, confirmed) {
+    const sym = state.settings.sym;
+    if (side === 'short' && !E.canShort(state)) return toast('買跌在第 5 關（停損）過關後解鎖');
+    if (!canTrade(sym)) return toast(S.mode === 'connecting' ? '行情連線中，請稍等' : '行情連線中斷，暫時不能下單');
+    const { amount, lev, eq } = orderAmount();
+    if (amount < E.MIN_AMOUNT) return toast(state.positions.length || state.orders.length ? '可用資金不夠，先平倉或取消掛單' : '可用資金不夠');
+    const ctx = ctxNow();
+    if (!confirmed) {
+      const w = E.warnings(state, { sym, side, lev, amount, ref: S.prices[sym], ctx, sl: 1 }, S.prices, Date.now()).filter((x) => !/停損觸發時|盈虧比/.test(x));
+      const heavy = (lev === 1 && amount / eq > 0.5) || (lev > 1 && amount * lev / eq > 1);
+      const risky = w.some((x) => /剛賠一筆|單日上限/.test(x));
+      if (heavy || risky) {
+        S.pendingSide = side;
+        return openSheet('info', '<h2>下單前確認</h2><div class="warns">' + w.map((x) => '<p>' + esc(x) + '</p>').join('') + '</div><div class="cta"><button class="btn quiet" data-act="x">先不要</button><button class="btn solid" data-act="confirmBuy">我知道風險，下單</button></div>');
+      }
+    }
+    const r = E.openPosition(state, { sym, side, lev, amount, price: S.prices[sym], reason: null, now: Date.now(), ctx }, S.prices);
+    if (!r.ok) return toast(r.err);
+    autoBracket(r.pos);
+    save();
+    S.cross = null;
+    render();
+    toast((side === 'long' ? '買漲 ' : '買跌 ') + fQ(r.pos.qty) + ' ' + sym + ' @ ' + fP(r.pos.entry) + (r.pos.sl != null ? '　停損 ' + fP(r.pos.sl) : ''));
+    const chase = ctx && ((side === 'long' && ctx.chg > 0.015) || (side === 'short' && ctx.chg < -0.015));
+    if (chase) setTimeout(() => toast(side === 'long' ? '提醒：價格剛急漲 ' + (ctx.chg * 100).toFixed(1) + '%，這筆可能是追高' : '提醒：價格剛急跌 ' + (-ctx.chg * 100).toFixed(1) + '%，這筆可能是追空'), 2700);
+  }
+  function closePos(p) {
+    if (!canTrade(p.sym)) return toast('行情連線中斷，暫時不能交易');
+    const r = E.closePosition(state, p.id, S.prices[p.sym], Date.now(), 'manual', S.prices);
+    if (!r.ok) return toast(r.err);
+    afterClose();
+    save();
+    if (S.sheetKind) { S.sheetKind = null; $('#sheet').hidden = true; }
+    render();
+    showReview(r.trade, true);
+  }
+  function crossAct(act, side) {
+    const sym = state.settings.sym;
+    const price = S.cross && S.cross.price;
+    const cur = S.prices[sym];
+    if (!price || !cur) return;
+    if (act === 'xlimit') {
+      if (!canTrade(sym)) return toast('行情連線中斷，暫時不能下單');
+      const { amount, lev } = orderAmount();
+      if (amount < E.MIN_AMOUNT) return toast('可用資金不夠');
+      const r = E.createOrder(state, { sym, side, lev, amount, limit: price, cur, reason: null, now: Date.now(), ctx: ctxNow() });
+      if (!r.ok) return toast(r.err);
+      save(); S.cross = null; render();
+      return toast('掛單' + (side === 'long' ? '買漲' : '買跌') + ' @ ' + fP(price) + '，按住線可以拖');
+    }
+    const p = curPos()[0];
+    if (!p) return;
+    const r = E.setStops(state, p.id, act === 'xsl' ? price : p.sl, act === 'xtp' ? price : p.tp, cur);
+    if (!r.ok) return toast(r.err);
+    save(); hideCross(); tickUI();
+    toast((act === 'xsl' ? '停損' : '停利') + '設在 ' + fP(price));
   }
 
   function viewTrade() {
     const sym = state.settings.sym;
-    const r = E.RANKS[state.rank];
-    const ns = nextStep();
-    const pos = state.positions;
-    const ords = state.orders;
-    return (
-      (ns ? '<button class="hint" data-act="' + (ns.lesson ? 'lesson' : 'go') + '" data-id="' + (ns.lesson || ns.go) + '"><div><small>' + esc(ns.small) + '</small><span>' + esc(ns.text) + '</span></div><i class="chev"></i></button>' : '') +
-      '<div class="note" id="modeNote" hidden><span></span></div>' +
-      '<div class="coins">' + E.ALL.map((s) => '<button data-act="sym" data-id="' + s + '" class="' + (s === sym ? 'on' : '') + (r.syms.includes(s) ? '' : ' lock') + '">' + s + '</button>').join('') + '</div>' +
-      '<div class="quote"><div class="px"><span id="px">' + fP(S.prices[sym]) + '</span><small>USDT</small></div><div class="sub"><span id="chg"></span>　<span id="twd"></span></div></div>' +
-      '<div class="chartbar"><div class="seg">' + Object.keys(IVS).map((k) => '<button data-act="iv" data-id="' + k + '" class="' + (k === state.settings.interval ? 'on' : '') + '">' + IVS[k][0] + '</button>').join('') + '</div>' +
-      (state.rank >= 3 ? '<button class="chip' + (state.settings.ma ? ' on' : '') + '" data-act="ma">MA20</button>' : '') + '</div>' +
-      '<div class="chartwrap"><canvas id="chart" aria-label="' + sym + ' K 線圖"></canvas><div class="chartmsg" id="chartMsg">圖表載入中</div></div><div class="sub" style="margin-top:6px">兩指縮放，左右拖曳看更早的走勢，點兩下還原</div>' +
-      '<div class="acct"><div><label>總資產</label><b id="eq"></b></div><div><label>可用資金</label><b id="cash"></b></div><div><label>未實現損益</label><b id="upnl"></b></div></div>' +
-      '<div class="cta"><button class="btn solid" data-act="order" data-id="long">買進</button>' + (state.rank >= 4 ? '<button class="btn" data-act="order" data-id="short">做空</button>' : '') + '</div>' +
-      '<section><h3>持倉</h3>' + (pos.length ? '<div class="list">' + pos.map(posRow).join('') + '</div>' : '<div class="empty">還沒有持倉。買進之後會出現在這裡。</div>') + '</section>' +
-      (ords.length ? '<section><h3>掛單</h3><div class="list">' + ords.map((o) => '<div class="row"><div class="row-main"><div><b>' + o.sym + '</b><span class="tag">限價' + (o.side === 'long' ? '買進' : '做空') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + ' USDT</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div></section>' : '')
-    );
+    return '<div class="tv">' +
+      '<div class="th"><button class="symbtn" data-act="coins"><b>' + esc(sym) + '</b><span>USDT</span><i class="caret"></i></button><div class="thp"><b id="px">' + fP(S.prices[sym]) + '</b><span id="chg"></span></div></div>' +
+      '<div class="tools"><div class="seg">' + Object.keys(IVS).map((k) => '<button data-act="iv" data-id="' + k + '" class="' + (k === state.settings.interval ? 'on' : '') + '">' + IVS[k][0] + '</button>').join('') + '</div>' +
+      (state.rank >= 3 ? '<button class="chip' + (state.settings.ma ? ' on' : '') + '" data-act="ma">MA20</button>' : '') + '<span class="sp"></span><button class="chip" data-act="book" id="bookBtn">持倉</button></div>' +
+      '<div class="chartwrap"><canvas id="chart" aria-label="' + esc(sym) + ' K 線圖"></canvas><div class="chartmsg" id="chartMsg">圖表載入中</div></div>' +
+      '<div class="strip" id="strip"></div>' +
+      '<div class="tbar" id="bar"></div></div>';
   }
-  function posRow(p) {
-    const lev = E.isLev(p);
-    return '<div class="row"><div class="row-main"><div><b>' + p.sym + '</b><span class="tag">' + (p.side === 'long' ? (lev ? '做多' : '現貨') : '做空') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span><div class="sub">' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '</div><div class="sub">' + (p.sl != null ? '停損 ' + fP(p.sl) : '未設停損') + '　' + (p.tp != null ? '停利 ' + fP(p.tp) : '未設停利') + (lev ? '　強平 ' + fP(p.liq) : '') + '</div></div><div class="right"><b id="pnl' + p.id + '"></b><div class="sub" id="pp' + p.id + '"></div></div></div><div class="row-actions"><button class="btn sm" data-act="close" data-id="' + p.id + '">' + (p.side === 'long' ? '賣出' : '平倉') + '</button>' + (state.rank >= 2 ? '<button class="btn sm" data-act="stops" data-id="' + p.id + '">停損停利</button>' : '') + '</div></div>';
+  function stripHTML() {
+    const pos = curPos();
+    const others = state.positions.length - pos.length;
+    const ords = state.orders.length;
+    if (pos.length) {
+      const p = pos[0];
+      const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
+      const v = E.posValue(p, px) - p.margin;
+      const r = posR(p, px);
+      const extra = [pos.length > 1 ? '同幣還有 ' + (pos.length - 1) + ' 筆' : '', others ? '其他持倉 ' + others : '', ords ? '掛單 ' + ords : ''].filter(Boolean).join('　');
+      return '<button class="strip-in" data-act="book"><span class="sl"><span><span class="side ' + (p.side === 'long' ? 'up' : 'down') + '">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span>' + fQ(p.qty) + ' ' + esc(p.sym) + '</span><small>進場 ' + fP(p.entry) + '　打平 ' + fP(breakeven(p)) + (extra ? '　' + extra : '') + '</small></span><span class="sr"><b class="' + cls(v) + '">' + fS(v) + '</b><small class="' + cls(v) + '">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</small></span></button>';
+    }
+    const eq = E.equity(state, S.prices);
+    const ns = nextStep();
+    return '<div class="strip-in idle"><span class="sl"><span>總資產 <b>' + fU(eq) + '</b></span><small>可用 ' + fU(state.cash) + (others ? '　其他持倉 ' + others : '') + (ords ? '　掛單 ' + ords : '') + '</small></span>' + (ns ? '<button class="nx" data-act="' + (ns.lesson ? 'lesson' : 'go') + '" data-id="' + (ns.lesson || ns.go) + '"><small>' + esc(ns.small) + '</small><span>' + esc(ns.short || ns.text) + '</span></button>' : '') + '</div>';
   }
   function tickUI() {
-    if (S.view === 'trade') {
+    if (S.view === 'trade' && $('#px')) {
       const sym = state.settings.sym;
-      const p = S.prices[sym];
-      const el = $('#px');
-      if (!el) return;
-      el.textContent = fP(p);
+      $('#px').textContent = fP(S.prices[sym]);
       const c = S.chg[sym];
       const ce = $('#chg');
-      ce.textContent = c == null ? '' : '24 小時 ' + fPct(c);
+      ce.textContent = c == null ? '' : fPct(c);
       ce.className = c == null ? '' : cls(c);
-      $('#twd').textContent = p > 0 ? '約 NT$ ' + Math.round(p * TWD).toLocaleString('en-US') : '';
-      const eq = E.equity(state, S.prices);
-      $('#eq').textContent = fU(eq);
-      $('#cash').textContent = fU(state.cash);
-      let u = 0;
-      for (const q of state.positions) {
-        const px = S.prices[q.sym] > 0 ? S.prices[q.sym] : q.entry;
-        const v = E.posValue(q, px) - q.margin;
-        u += v;
-        const a = $('#pnl' + q.id);
-        if (a) { a.textContent = fS(v); a.className = cls(v); $('#pp' + q.id).textContent = fPct(v / q.margin); }
+      $('#strip').innerHTML = stripHTML();
+      const n = state.positions.length + state.orders.length;
+      const bb = $('#bookBtn');
+      bb.textContent = n ? '持倉 ' + n : '持倉';
+      bb.classList.toggle('on', n > 0);
+      if (S.barMode === 'trade') {
+        const a = $('#amtUsd');
+        if (a) a.textContent = fU(orderAmount().amount);
+        if ((curPos().length > 0) !== !!$('#bar [data-act="flat"]')) renderBar();
       }
-      const ue = $('#upnl');
-      ue.textContent = state.positions.length ? fS(u) : '—';
-      ue.className = state.positions.length ? cls(u) : '';
     }
-    if (S.sheetKind === 'order') calcOrder();
-    if (S.sheetKind === 'close') calcClose();
+    if (S.sheetKind === 'book') renderBook(true);
+    if (S.sheetKind === 'coins') renderCoins(true);
+  }
+
+  function nextStep() {
+    for (const l of LESSONS) {
+      if (lessonDone(l.id)) continue;
+      if (l.rank > state.rank) break;
+      if (!(l.id === 1 || lessonDone(l.id - 1))) break;
+      const st = state.lessons[l.id];
+      if (st && st.read && l.task && !state.flags[l.task.flag]) return { small: '第 ' + l.id + ' 關任務', text: l.task.text, short: '看任務', lesson: l.id };
+      return { small: '下一步', text: '第 ' + l.id + ' 關　' + l.title, short: '第 ' + l.id + ' 關 ' + l.title, lesson: l.id };
+    }
+    const r = E.requirements(state);
+    if (r.ready) return { small: '可以升級了', text: state.rank >= 5 ? '完成結業' : '升上段位 ' + (state.rank + 1), go: 'learn' };
+    const u = r.list.find((x) => !x.done);
+    if (u) return { small: '升段進度', text: u.label + '　' + u.prog, short: u.prog, go: 'learn' };
+    return null;
+  }
+  function lessonOpen(l) {
+    if (l.rank > state.rank) return false;
+    return l.id === 1 || lessonDone(l.id - 1);
   }
 
   function viewLearn() {
@@ -1835,6 +2166,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const recent = E.statsFor(T.slice(-60));
     const eq = E.equity(state, S.prices);
     const wk = E.weaknesses(state);
+    const rs = T.filter((t) => t.r != null);
+    const avgR = rs.length ? rs.reduce((a, t) => a + t.r, 0) / rs.length : null;
     let luck, w = 0;
     if (recent.n < 20) luck = '還要 ' + (20 - recent.n) + ' 筆交易才能判斷。筆數太少的時候，賺賠大多是運氣。';
     else {
@@ -1849,30 +2182,55 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       '<section><h3>成績</h3><div class="grid">' +
       m('交易筆數', st.n, '', '勝率') + m('勝率', st.n ? Math.round(st.winRate * 100) + '%' : '—', '', '勝率') +
       m('平均每筆賺', st.wins ? fPct(st.avgWin) : '—', 'up', '盈虧比') + m('平均每筆賠', st.losses ? fPct(st.avgLoss) : '—', 'down', '盈虧比') +
-      m('期望值（每筆）', st.n ? fPct(st.exp) : '—', st.n ? cls(st.exp) : '', '期望值') + m('最大回撤', (state.maxDD * 100).toFixed(1) + '%', '', '最大回撤') +
-      '</div><div class="sub" style="margin-top:8px">賺賠的百分比，都是以當時的總資產計算。點任何一格看解釋。</div></section>' +
+      m('期望值（每筆）', st.n ? fPct(st.exp) : '—', st.n ? cls(st.exp) : '', '期望值') + m('平均 R', avgR == null ? '—' : fR(avgR), avgR == null ? '' : cls(avgR), '盈虧比') +
+      m('最大回撤', (state.maxDD * 100).toFixed(1) + '%', '', '最大回撤') + m('有停損的比例', st.n ? Math.round(st.slRate * 100) + '%' : '—', '', '停損') +
+      '</div><div class="sub" style="margin-top:8px">賺賠的百分比以當時的總資產計算。R 是賺賠除以停損距離。點任何一格看解釋。</div></section>' +
       '<section><h3>是實力還是運氣</h3><div class="meter"><i style="width:' + w + '%"></i><u></u></div><p style="font-size:14px;color:var(--ink2);line-height:1.8">' + luck + '</p></section>' +
       '<section><h3>你現在最該改的地方</h3>' + (wk.length ? '<div class="list">' + wk.map((x) => '<button class="row lesson" data-act="lesson" data-id="' + x.lesson + '"><span class="body"><b>' + esc(x.title) + '</b><span class="sub">' + esc(x.detail) + '　重看第 ' + x.lesson + ' 關</span></span><i class="chev"></i></button>').join('') + '</div>' : '<div class="empty">' + (T.length < 8 ? '交易滿 8 筆之後，這裡會指出你最常犯的錯。' : '最近 30 筆沒有發現明顯的壞習慣。') + '</div>') + '</section>' +
       (state.rules ? '<section><h3>我的規則</h3><div class="list"><div class="row"><div class="row-main"><span>每筆最多賠</span><b>' + (state.rules.risk * 100).toFixed(0) + '%</b></div></div><div class="row"><div class="row-main"><span>一天最多賠</span><b>' + (state.rules.day * 100).toFixed(0) + '%</b></div></div><div class="row"><div class="row-main"><span>盈虧比最低</span><b>' + state.rules.rr + '</b></div></div></div></section>' : '') +
-      '<section><h3>交易紀錄</h3>' + (T.length ? '<div class="list">' + T.slice(-40).reverse().map((t) => '<button class="row" data-act="trade" data-id="' + t.id + '"><div class="row-main"><div><b>' + t.sym + '</b><span class="tag">' + (t.side === 'long' ? (t.lev > 1 ? '做多' : '現貨') : '做空') + (t.lev > 1 ? ' ' + t.lev + 'x' : '') + '</span><div class="sub">' + fT(t.t1) + '　' + WHY[t.why] + '　' + E.REASONS[t.reason] + '</div></div><div class="right"><b class="' + cls(t.pnl) + '">' + fS(t.pnl) + '</b><div class="sub">' + fPct(t.pct) + '</div></div></div></button>').join('') + '</div>' : '<div class="empty">還沒有完成的交易。</div>') + '</section>' +
-      '<section><h3>設定</h3><div class="list"><div class="row"><button class="toggle" role="switch" aria-checked="' + state.settings.twColors + '" data-act="tw"><span>紅漲綠跌<span class="sub" style="display:block">台股的習慣。預設是綠漲紅跌。</span></span><i class="sw"></i></button></div><div class="row"><div class="row-main"><span>行情來源</span><span class="sub">' + (S.mode === 'live' ? '幣安公開行情（即時）' : S.mode === 'sim' ? '系統模擬（練習用）' : '連線中') + '</span></div></div><div class="row"><div class="row-main"><span>匯率</span><span class="sub">固定以 1 USDT ≈ ' + TWD + ' 台幣估算</span></div></div><div class="row"><button class="toggle" data-act="reset"><span style="color:var(--down)">清除全部資料，從頭開始</span><i class="chev"></i></button></div></div></section>'
+      '<section><h3>交易紀錄</h3>' + (T.length ? '<div class="list">' + T.slice(-40).reverse().map((t) => '<button class="row" data-act="trade" data-id="' + t.id + '"><div class="row-main"><div><b>' + esc(t.sym) + '</b><span class="tag">' + (t.side === 'long' ? '買漲' : '買跌') + (t.lev > 1 ? ' ' + t.lev + 'x' : '') + '</span><div class="sub">' + fT(t.t1) + '　' + WHY[t.why] + '　' + (E.REASONS[t.reason] || '未選理由') + '</div></div><div class="right"><b class="' + cls(t.pnl) + '">' + fS(t.pnl) + '</b><div class="sub">' + fPct(t.pct) + (t.r != null ? '　' + fR(t.r) : '') + '</div></div></div></button>').join('') + '</div>' : '<div class="empty">還沒有完成的交易。</div>') + '</section>' +
+      '<section><h3>設定</h3><div class="list"><div class="row"><button class="toggle" role="switch" aria-checked="' + state.settings.twColors + '" data-act="tw"><span>紅漲綠跌<span class="sub" style="display:block">台股的習慣。預設是綠漲紅跌。</span></span><i class="sw"></i></button></div><div class="row"><div class="row-main"><span>行情來源</span><span class="sub">' + (S.mode === 'live' ? '幣安公開行情（即時）' : S.mode === 'sim' ? '系統模擬（練習用）' : '連線中') + '</span></div></div><div class="row"><div class="row-main"><span>幣種</span><span class="sub">當日成交額前 10 名，排除穩定幣</span></div></div><div class="row"><div class="row-main"><span>匯率</span><span class="sub">固定以 1 USDT ≈ ' + TWD + ' 台幣估算</span></div></div><div class="row"><button class="toggle" data-act="reset"><span style="color:var(--down)">清除全部資料，從頭開始</span><i class="chev"></i></button></div></div></section>'
     );
+  }
+  function drawSpark() {
+    const c = $('#spark');
+    if (!c) return;
+    const W = c.clientWidth, H = c.clientHeight;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    c.width = W * dpr; c.height = H * dpr;
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const pts = state.eqHist.map((p) => p.e).concat([E.equity(state, S.prices)]);
+    const cs = getComputedStyle(document.documentElement);
+    if (pts.length < 3) { g.fillStyle = cs.getPropertyValue('--muted'); g.font = '12px ' + cs.getPropertyValue('--font'); g.fillText('完成幾筆交易後，這裡會畫出你的資產變化', 0, H / 2); return; }
+    let lo = Math.min(...pts), hi = Math.max(...pts);
+    if (hi === lo) { hi += 1; lo -= 1; }
+    const x = (i) => (i / (pts.length - 1)) * (W - 6) + 1;
+    const y = (v) => 4 + ((hi - v) / (hi - lo)) * (H - 10);
+    g.beginPath();
+    pts.forEach((v, i) => (i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v))));
+    g.strokeStyle = cs.getPropertyValue('--ink'); g.lineWidth = 1.25; g.stroke();
+    g.lineTo(x(pts.length - 1), H); g.lineTo(x(0), H); g.closePath();
+    g.globalAlpha = 0.05; g.fillStyle = cs.getPropertyValue('--ink'); g.fill(); g.globalAlpha = 1;
+    g.beginPath(); g.arc(x(pts.length - 1), y(pts[pts.length - 1]), 3, 0, 7); g.fillStyle = cs.getPropertyValue('--accent'); g.fill();
   }
 
   function render() {
     const v = $('#view');
     const top = v.scrollTop;
+    v.classList.toggle('fixed', S.view === 'trade');
     v.innerHTML = S.view === 'trade' ? viewTrade() : S.view === 'learn' ? viewLearn() : viewStats();
-    v.scrollTop = top;
+    v.scrollTop = S.view === 'trade' ? 0 : top;
     $$('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.v === S.view));
     $('#rankPill').textContent = '段位 ' + state.rank + ' ' + E.RANKS[state.rank].name;
     document.documentElement.dataset.tw = state.settings.twColors ? '1' : '0';
-    if (S.view === 'trade') { syncMode(); bindChart(); drawChart(); tickUI(); }
+    setMode(S.mode, S.stale);
+    if (S.view === 'trade') { bindChart(); renderBar(); tickUI(); drawChart(); }
     if (S.view === 'stats') drawSpark();
   }
   function go(view) {
     S.view = view;
-    $('#view').scrollTop = 0;
+    S.cross = null;
     render();
     $('#view').scrollTop = 0;
     try { if (location.hash !== '#' + view) history.replaceState(null, '', '#' + view); } catch (e) { return; }
@@ -1886,7 +2244,6 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   }
   function closeSheet() {
     S.sheetKind = null;
-    S.form = null;
     $('#sheet').hidden = true;
     $('#sheetBody').innerHTML = '';
     setTimeout(flushQueue, 50);
@@ -1902,159 +2259,49 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     openSheet('info', '<h2>' + esc(title) + '</h2><div class="lines">' + lines.map((l) => '<p>' + esc(l) + '</p>').join('') + '</div><div class="cta"><button class="btn solid" data-act="x">' + (btn || '知道了') + '</button></div>');
   }
   function showReview(t, fresh) {
+    S.reviewId = t.id;
+    S.reviewFresh = fresh;
     const lines = E.review(t);
+    const pick = !t.reason;
     openSheet('review',
-      '<div class="sub">' + t.sym + '　' + WHY[t.why] + '　' + fT(t.t1) + '</div><h2>' + (t.pnl >= 0 ? '這筆賺了 ' : '這筆賠了 ') + '<span class="' + cls(t.pnl) + '">' + fU(Math.abs(t.pnl)) + '</span> USDT</h2>' +
-      '<div class="calc"><div><span>進場 → 出場</span><b>' + fP(t.entry) + ' → ' + fP(t.exit) + '</b></div><div><span>投入金額的報酬</span><b class="' + cls(t.pct) + '">' + fPct(t.pct) + '</b></div><div><span>佔當時總資產</span><b class="' + cls(t.ret) + '">' + fPct(t.ret) + '</b></div><div><span>手續費' + (t.funding > 0 ? '＋資金費' : '') + '</span><b>' + fU(t.fees + t.funding) + '</b></div><div><span>持有時間</span><b>' + E.fmtDur(t.t1 - t.t0) + '</b></div><div><span>當初的理由</span><b>' + E.REASONS[t.reason] + '</b></div></div>' +
-      (lines.length ? '<h3 style="margin-top:22px">檢討</h3><div class="lines" style="margin-top:0">' + lines.map((l) => '<p>' + esc(l) + '</p>').join('') + '</div>' : '') +
-      '<div class="cta"><button class="btn solid" data-act="x">' + (fresh ? '知道了' : '關閉') + '</button></div>');
+      '<div class="sub">' + esc(t.sym) + '　' + (t.side === 'long' ? '買漲' : '買跌') + '　' + WHY[t.why] + '　' + fT(t.t1) + '</div><h2>' + (t.pnl >= 0 ? '這筆賺了 ' : '這筆賠了 ') + '<span class="' + cls(t.pnl) + '">' + fU(Math.abs(t.pnl)) + '</span> USDT' + (t.r != null ? '<span class="rtag ' + cls(t.r) + '">' + fR(t.r) + '</span>' : '') + '</h2>' +
+      (pick ? '<div class="field"><label><span>這筆你為什麼進場？</span><span>選了才會檢討</span></label><div class="quick">' + Object.keys(E.REASONS).map((k) => '<button data-act="reason" data-id="' + k + '">' + E.REASONS[k] + '</button>').join('') + '</div></div>' : '') +
+      '<div class="calc"><div><span>進場 → 出場</span><b>' + fP(t.entry) + ' → ' + fP(t.exit) + '</b></div><div><span>投入金額的報酬</span><b class="' + cls(t.pct) + '">' + fPct(t.pct) + '</b></div><div><span>佔當時總資產</span><b class="' + cls(t.ret) + '">' + fPct(t.ret) + '</b></div><div><span>手續費' + (t.funding > 0 ? '＋資金費' : '') + '</span><b>' + fU(t.fees + t.funding) + '</b></div><div><span>持有時間</span><b>' + E.fmtDur(t.t1 - t.t0) + '</b></div>' + (t.reason ? '<div><span>進場理由</span><b>' + E.REASONS[t.reason] + '</b></div>' : '') + '</div>' +
+      (lines.length && !pick ? '<h3 style="margin-top:22px">檢討</h3><div class="lines" style="margin-top:0">' + lines.map((l) => '<p>' + esc(l) + '</p>').join('') + '</div>' : '') +
+      '<div class="cta"><button class="btn ' + (pick ? 'quiet' : 'solid') + '" data-act="x">' + (pick ? '先不選' : fresh ? '知道了' : '關閉') + '</button></div>');
   }
-
-  function openOrder(side) {
-    const sym = state.settings.sym;
-    if (!E.RANKS[state.rank].syms.includes(sym)) { toast(sym + ' 要到段位 3 才會解鎖'); return; }
-    if (!canTrade(sym)) { toast(S.mode === 'connecting' ? '行情連線中，請稍等' : '行情連線中斷，暫時不能下單'); return; }
-    S.form = { sym, side, kind: 'market', amount: '', limit: '', lev: 1, sl: '', tp: '', reason: null, err: '' };
-    renderOrder();
+  function coinRows() {
+    const list = S.coins.slice();
+    if (!list.includes(state.settings.sym)) list.push(state.settings.sym);
+    return list.map((s) => '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small></span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>').join('');
   }
-  function renderOrder() {
-    const f = S.form;
+  function renderCoins(soft) {
+    if (soft) { const el = $('.coins-list'); if (el) el.innerHTML = coinRows(); return; }
+    openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 10 名，排除穩定幣，每 30 分鐘更新') + '</div><div class="list coins-list">' + coinRows() + '</div>');
+  }
+  function renderBook(soft) {
+    const P = state.positions, O = state.orders;
+    const html = '<h2>持倉與掛單</h2>' +
+      (P.length ? '<div class="list">' + P.map((p) => {
+        const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
+        const v = E.posValue(p, px) - p.margin;
+        const r = posR(p, px);
+        return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b><span class="tag">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span><div class="sub">' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '　打平 ' + fP(breakeven(p)) + '</div><div class="sub">' + (p.sl != null ? '停損 ' + fP(p.sl) : '未設停損') + '　' + (p.tp != null ? '停利 ' + fP(p.tp) : '未設停利') + (E.isLev(p) ? '　強平 ' + fP(p.liq) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button>' + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
+      }).join('') + '</div>' : '<div class="empty">沒有持倉。</div>') +
+      '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。長按走勢圖就能掛單。</div>') +
+      '<div class="cta"><button class="btn solid" data-act="x">關閉</button></div>';
+    if (soft) { const b = $('#sheetBody'); const top = b.scrollTop; b.innerHTML = html; b.scrollTop = top; return; }
+    openSheet('book', html);
+  }
+  function openAmount() {
     const r = E.RANKS[state.rank];
-    const long = f.side === 'long';
-    const levs = [1, 2, 3, 5, 10].filter((x) => x <= r.maxLev);
-    const q = (act, arr, lab) => arr.map((v) => '<button data-act="' + act + '" data-id="' + v + '">' + lab(v) + '</button>').join('');
-    openSheet('order',
-      '<div class="sub">' + f.sym + '　' + NAMES[f.sym] + '　現價 <span id="oPx">' + fP(S.prices[f.sym]) + '</span></div><h2>' + (long ? '買進' : '做空') + '</h2>' +
-      '<div class="seg wide" style="margin-top:14px"><button data-act="kind" data-id="market" class="' + (f.kind === 'market' ? 'on' : '') + '">市價</button><button data-act="kind" data-id="limit" class="' + (f.kind === 'limit' ? 'on' : '') + '"' + (limitOK() ? '' : ' disabled') + '>限價' + (limitOK() ? '' : '（第 4 關解鎖）') + '</button></div>' +
-      (f.kind === 'limit' ? '<div class="field"><label for="fLimit"><span>限價（到這個價格才成交）</span></label><input id="fLimit" inputmode="decimal" autocomplete="off" value="' + esc(f.limit) + '" placeholder="' + (long ? '低於現價' : '高於現價') + '"><div class="quick">' + q('qlimit', long ? [-0.2, -0.5, -1] : [0.2, 0.5, 1], (v) => '現價 ' + (v > 0 ? '+' : '−') + Math.abs(v) + '%') + '</div></div>' : '') +
-      '<div class="field"><label for="fAmt"><span>' + (r.maxLev > 1 ? '保證金（USDT）' : '金額（USDT）') + '</span><span>可用 ' + fU(state.cash) + '</span></label><input id="fAmt" inputmode="decimal" autocomplete="off" value="' + esc(f.amount) + '" placeholder="最少 10"><div class="quick">' + q('qamt', [10, 25, 50, 100], (v) => v + '%') + '</div></div>' +
-      (r.maxLev > 1 ? '<div class="field"><label><span>槓桿</span></label><div class="seg wide">' + levs.map((x) => '<button data-act="lev" data-id="' + x + '" class="' + (f.lev === x ? 'on' : '') + '">' + (x === 1 ? '不開' : x + ' 倍') + '</button>').join('') + '</div></div>' : '') +
-      (state.rank >= 2 ? '<div class="two"><div class="field"><label for="fSl"><span>停損價</span></label><input id="fSl" inputmode="decimal" autocomplete="off" value="' + esc(f.sl) + '" placeholder="選填"><div class="quick">' + q('qsl', [1, 2, 3], (v) => (long ? '−' : '+') + v + '%') + '</div></div><div class="field"><label for="fTp"><span>停利價</span></label><input id="fTp" inputmode="decimal" autocomplete="off" value="' + esc(f.tp) + '" placeholder="選填"><div class="quick">' + q('qtp', [2, 4, 6], (v) => (long ? '+' : '−') + v + '%') + '</div></div></div>' : '') +
-      '<div class="field"><label><span>為什麼' + (long ? '買' : '做空') + '？</span><span>結束後會用它來檢討</span></label><div class="quick" id="reasons">' + Object.keys(E.REASONS).map((k) => '<button data-act="reason" data-id="' + k + '" class="' + (f.reason === k ? 'on' : '') + '">' + E.REASONS[k] + '</button>').join('') + '</div></div>' +
-      '<div class="calc" id="oCalc"></div><div class="warns" id="oWarn"></div><div class="err" id="oErr" role="alert">' + esc(f.err) + '</div>' +
-      '<div class="cta"><button class="btn quiet" data-act="x">取消</button><button class="btn solid" data-act="submit" id="oGo">確認</button></div>');
-    calcOrder();
-  }
-  function readOrder() {
-    const f = S.form;
-    for (const [k, id] of [['amount', 'fAmt'], ['limit', 'fLimit'], ['sl', 'fSl'], ['tp', 'fTp']]) { const el = $('#' + id); if (el) f[k] = el.value; }
-    const cur = S.prices[f.sym];
-    const o = { sym: f.sym, side: f.side, lev: f.lev, amount: num(f.amount), sl: f.sl.trim() === '' ? null : num(f.sl), tp: f.tp.trim() === '' ? null : num(f.tp), reason: f.reason, cur, limit: f.kind === 'limit' ? num(f.limit) : null };
-    o.ref = f.kind === 'limit' ? o.limit : cur;
-    o.badSl = f.sl.trim() !== '' && o.sl == null;
-    o.badTp = f.tp.trim() !== '' && o.tp == null;
-    return o;
-  }
-  function calcOrder() {
-    const f = S.form;
-    if (!f || !$('#oCalc')) return;
-    const o = readOrder();
-    $('#oPx').textContent = fP(o.cur);
-    const rows = [];
     const eq = E.equity(state, S.prices);
-    if (o.amount > 0 && o.ref > 0) {
-      const notional = o.amount * o.lev;
-      rows.push(['大約可以' + (o.side === 'long' ? '買到' : '賣出'), fQ(notional / o.ref) + ' ' + f.sym]);
-      rows.push(['手續費', fU(E.costOf(o) - o.amount) + ' USDT']);
-      rows.push(['佔總資產', (o.amount / eq * 100).toFixed(0) + '%' + (o.lev > 1 ? '（部位 ' + (notional / eq * 100).toFixed(0) + '%）' : '')]);
-      if (o.sl > 0) { const risk = Math.abs(o.ref - o.sl) / o.ref * notional; rows.push(['停損觸發時大約賠', fU(risk) + ' USDT（總資產的 ' + (risk / eq * 100).toFixed(1) + '%）']); }
-      if (o.sl > 0 && o.tp > 0 && o.sl !== o.ref) rows.push(['盈虧比', (Math.abs(o.tp - o.ref) / Math.abs(o.ref - o.sl)).toFixed(1)]);
-      if (o.lev > 1 || o.side === 'short') rows.push(['強制平倉價', fP(E.liqPrice(o.side, o.ref, o.lev))]);
-    }
-    $('#oCalc').innerHTML = rows.map((r) => '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('');
-    const w = o.amount > 0 && o.ref > 0 ? E.warnings(state, Object.assign({}, o, { ctx: ctxNow() }), S.prices, Date.now()) : [];
-    const key = w.join('|');
-    if (key !== f.wkey) { f.wkey = key; $('#oWarn').innerHTML = w.map((x) => '<p>' + esc(x) + '</p>').join(''); $('#oGo').textContent = w.length ? '我知道風險，確認' : '確認'; }
-  }
-  function submitOrder() {
-    const f = S.form;
-    const o = readOrder();
-    const fail = (m) => { f.err = m; $('#oErr').textContent = m; };
-    if (!canTrade(f.sym)) return fail('行情連線中斷，暫時不能下單');
-    if (o.amount == null) return fail('請輸入金額，只能是數字');
-    if (f.kind === 'limit' && o.limit == null) return fail('請輸入限價，只能是數字');
-    if (o.badSl) return fail('停損價只能是數字');
-    if (o.badTp) return fail('停利價只能是數字');
-    if (!o.reason) return fail('請選一個下單的理由');
-    const now = Date.now();
-    const c = ctxNow();
-    const r = f.kind === 'limit' ? E.createOrder(state, Object.assign(o, { now, ctx: c })) : E.openPosition(state, Object.assign(o, { price: o.cur, now, ctx: c }), S.prices);
-    if (!r.ok) return fail(r.err);
-    save();
-    closeSheet();
-    go('trade');
-    toast(f.kind === 'limit' ? '限價單已掛出' : (f.side === 'long' ? '已買進 ' : '已做空 ') + fQ(r.pos.qty) + ' ' + f.sym);
-  }
-  function fillQuick(act, v) {
-    const f = S.form;
-    const o = readOrder();
-    const cur = S.prices[f.sym];
-    const long = f.side === 'long';
-    if (act === 'qamt') { const m = E.maxAmount(state.cash, f.lev, f.side); $('#fAmt').value = String(Math.floor(m * v) / 100); }
-    if (act === 'qlimit') $('#fLimit').value = raw(cur * (1 + v / 100));
-    const ref = f.kind === 'limit' ? num($('#fLimit').value) : cur;
-    if (act === 'qsl' || act === 'qtp') {
-      if (!(ref > 0)) { $('#oErr').textContent = '請先輸入限價'; return; }
-      if (act === 'qsl') $('#fSl').value = raw(ref * (1 + (long ? -v : v) / 100));
-      else $('#fTp').value = raw(ref * (1 + (long ? v : -v) / 100));
-    }
-    $('#oErr').textContent = '';
-    f.err = '';
-    calcOrder();
-    return o;
-  }
-
-  function openClose(id) {
-    const p = state.positions.find((x) => x.id === id);
-    if (!p) return;
-    if (!canTrade(p.sym)) { toast('行情連線中斷，暫時不能交易'); return; }
-    S.form = { closeId: id };
-    openSheet('close', '<div class="sub">' + p.sym + '　' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '</div><h2>用市價' + (p.side === 'long' ? '賣出' : '平倉') + '</h2><div class="calc" id="cCalc"></div><div class="cta"><button class="btn quiet" data-act="x">再等等</button><button class="btn solid" data-act="doClose">確認' + (p.side === 'long' ? '賣出' : '平倉') + '</button></div>');
-    calcClose();
-  }
-  function calcClose() {
-    const el = $('#cCalc');
-    const p = S.form && state.positions.find((x) => x.id === S.form.closeId);
-    if (!el) return;
-    if (!p) { closeSheet(); return; }
-    const px = S.prices[p.sym];
-    const fee = p.qty * px * (E.isLev(p) ? E.FEE_LEV : E.FEE_SPOT);
-    const net = E.posPnl(p, px) - fee - p.feeOpen;
-    el.innerHTML = '<div><span>現價</span><b>' + fP(px) + '</b></div><div><span>賣出手續費</span><b>' + fU(fee) + '</b></div><div><span>這筆大約' + (net >= 0 ? '賺' : '賠') + '（已扣來回手續費）</span><b class="' + cls(net) + '">' + fS(net) + ' USDT</b></div>';
-  }
-  function doClose() {
-    const id = S.form && S.form.closeId;
-    const p = state.positions.find((x) => x.id === id);
-    if (!p) { closeSheet(); return; }
-    if (!canTrade(p.sym)) { toast('行情連線中斷，暫時不能交易'); return; }
-    const r = E.closePosition(state, id, S.prices[p.sym], Date.now(), 'manual', S.prices);
-    if (!r.ok) { toast(r.err); return; }
-    afterClose();
-    save();
-    S.sheetKind = null;
-    render();
-    showReview(r.trade, true);
-  }
-  function openStops(id) {
-    const p = state.positions.find((x) => x.id === id);
-    if (!p) return;
-    const long = p.side === 'long';
-    S.form = { stopId: id };
-    const q = (act, arr, sign) => arr.map((v) => '<button data-act="' + act + '" data-id="' + v + '">現價 ' + sign + v + '%</button>').join('');
-    openSheet('stops', '<div class="sub">' + p.sym + '　進場 ' + fP(p.entry) + '　現價 ' + fP(S.prices[p.sym]) + '</div><h2>停損和停利</h2><div class="field"><label for="sSl"><span>停損價（留空代表不設）</span></label><input id="sSl" inputmode="decimal" autocomplete="off" value="' + (p.sl != null ? raw(p.sl) : '') + '"><div class="quick">' + q('ssl', [1, 2, 3], long ? '−' : '+') + '</div></div><div class="field"><label for="sTp"><span>停利價（留空代表不設）</span></label><input id="sTp" inputmode="decimal" autocomplete="off" value="' + (p.tp != null ? raw(p.tp) : '') + '"><div class="quick">' + q('stp', [2, 4, 6], long ? '+' : '−') + '</div></div><div class="err" id="sErr" role="alert"></div><div class="cta"><button class="btn quiet" data-act="x">取消</button><button class="btn solid" data-act="saveStops">儲存</button></div>');
-  }
-  function saveStops() {
-    const p = state.positions.find((x) => x.id === (S.form && S.form.stopId));
-    if (!p) { closeSheet(); return; }
-    const a = $('#sSl').value.trim(), b = $('#sTp').value.trim();
-    const sl = a === '' ? null : num(a), tp = b === '' ? null : num(b);
-    if ((a !== '' && sl == null) || (b !== '' && tp == null)) { $('#sErr').textContent = '價格只能是數字'; return; }
-    const r = E.setStops(state, p.id, sl, tp, S.prices[p.sym]);
-    if (!r.ok) { $('#sErr').textContent = r.err; return; }
-    save();
-    closeSheet();
-    render();
-    toast('已更新停損停利');
+    const levs = [1, 2, 3, 5, 10].filter((x) => x <= r.maxLev);
+    openSheet('amount', '<h2>每筆金額</h2><div class="sub">按「買漲」「買跌」時，用總資產的多少比例下單。總資產 ' + fU(eq) + ' USDT</div>' +
+      '<div class="quick big">' + [0.05, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="pct" data-id="' + p + '" class="' + (state.settings.amtPct === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(eq * p) + '</small></button>').join('') + '</div>' +
+      (r.maxLev > 1 ? '<div class="field"><label><span>槓桿</span><span>部位 = 金額 × 槓桿</span></label><div class="seg wide">' + levs.map((x) => '<button data-act="lev" data-id="' + x + '" class="' + (state.settings.lev === x ? 'on' : '') + '">' + (x === 1 ? '不開' : x + ' 倍') + '</button>').join('') + '</div></div>' : '') +
+      '<div class="lines"><p>建議每筆 10% 以內。真正要控制的是停損時賠多少：段位 2 之後，圖上的停損線會直接顯示這個數字。</p></div>' +
+      '<div class="cta"><button class="btn solid" data-act="x">完成</button></div>');
   }
 
   const FIG = {
@@ -2062,14 +2309,14 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   };
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function buildQuiz(l) {
-    const p = S.prices.BTC > 0 ? S.prices.BTC : 64280;
-    const cx = state.settings.sym === 'BTC' ? ctxNow() : null;
-    const k = state.settings.sym === 'BTC' && S.candles.length > 2 ? S.candles[S.candles.length - 2] : null;
+    const p = S.prices.BTC > 0 ? S.prices.BTC : 68800;
+    const onBtc = state.settings.sym === 'BTC';
+    const cx = onBtc ? ctxNow() : null;
+    const k = onBtc && S.candles.length > 2 ? S.candles[S.candles.length - 2] : null;
     const c = { p, f: fP, q: (x) => fQ(x) + ' 顆', ma: cx ? cx.ma : null, k };
     return l.quiz.map((q) => {
       const o = typeof q === 'function' ? q(c) : q;
-      const opts = shuffle(o.opts.map((t, i) => ({ t, ok: i === o.a })));
-      return { q: o.q, opts, why: o.why };
+      return { q: o.q, opts: shuffle(o.opts.map((t, i) => ({ t, ok: i === o.a }))), why: o.why };
     });
   }
   function openLesson(id) {
@@ -2089,6 +2336,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     $('#page').hidden = true;
     $('#pageBody').innerHTML = '';
     render();
+    setTimeout(flushQueue, 50);
   }
   function renderLesson() {
     const L = S.lesson;
@@ -2110,7 +2358,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         const sel = (id, label, arr, val, f) => '<div class="field"><label for="' + id + '"><span>' + label + '</span></label><select id="' + id + '">' + arr.map((v) => '<option value="' + v + '"' + (Math.abs(v - val) < 1e-9 ? ' selected' : '') + '>' + f(v) + '</option>').join('') + '</select></div>';
         form = sel('rRisk', '每筆最多賠掉總資產的', [0.01, 0.02, 0.03], cur.risk, (v) => v * 100 + '%') + sel('rDay', '一天最多賠掉總資產的', [0.03, 0.05, 0.08], cur.day, (v) => v * 100 + '%') + sel('rRr', '盈虧比最低要', [1.5, 2, 3], cur.rr, (v) => v) + '<div class="cta"><button class="btn" data-act="saveRules">' + (done ? '更新我的規則' : '訂下我的規則') + '</button></div>';
       }
-      body = '<div class="card"><small>第 ' + l.id + ' 關　任務</small><h2>' + (done ? '任務完成' : '動手做一次') + '</h2><p>' + esc(l.task.text) + '</p>' + form + (done ? '' : l.task.form ? '' : '<p style="margin-top:18px;font-size:14px;color:var(--muted)">完成後回到這一關，就可以開始測驗。</p>') + '</div>';
+      body = '<div class="card"><small>第 ' + l.id + ' 關　任務</small><h2>' + (done ? '任務完成' : '動手做一次') + '</h2><p>' + esc(l.task.text) + '</p>' + form + (done || l.task.form ? '' : '<p style="margin-top:18px;font-size:14px;color:var(--muted)">完成後回到這一關，就可以開始測驗。</p>') + '</div>';
       foot = done ? '<button class="btn solid" data-act="lquiz">開始測驗</button>' : l.task.form ? '' : '<button class="btn solid" data-act="ltrade">去交易頁</button>';
     } else if (L.phase === 'quiz') {
       const q = L.quiz[L.i];
@@ -2122,7 +2370,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       pos = total;
       const pass = L.wrong === 0;
       const ns = pass ? nextStep() : null;
-      body = '<div class="card"><small>第 ' + l.id + ' 關</small><h2>' + (pass ? '過關' : '答錯 ' + L.wrong + ' 題') + '</h2><p>' + (pass ? (ns && ns.lesson ? '下一關是「' + esc(LESSONS.find((x) => x.id === ns.lesson).title) + '」。' : '到「學習」頁看看升段的條件還差什麼。') : '全部答對才算過關。題目裡的價格會換成當下的行情，再試一次。') + '</p></div>';
+      body = '<div class="card"><small>第 ' + l.id + ' 關</small><h2>' + (pass ? '過關' : '答錯 ' + L.wrong + ' 題') + '</h2><p>' + (pass ? (l.id === 5 ? '「買跌」已經解鎖。' : '') + (ns && ns.lesson ? '下一關是「' + esc(LESSONS.find((x) => x.id === ns.lesson).title) + '」。' : '到「學習」頁看看升段的條件還差什麼。') : '全部答對才算過關。題目裡的價格會換成當下的行情，再試一次。') + '</p></div>';
       foot = pass ? '<button class="btn solid" data-act="ldone">好</button>' : '<button class="btn quiet" data-act="lreview">重看內容</button><button class="btn solid" data-act="lretry">再測一次</button>';
     }
     $('#pageBar').style.width = Math.round((pos / total) * 100) + '%';
@@ -2148,7 +2396,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     else if (act === 'qnext') {
       if (L.i < L.quiz.length - 1) { L.i++; L.picked = null; }
       else { L.phase = 'end'; if (L.wrong === 0) mark({ read: true, done: true }); }
-    } else if (act === 'ldone') { closePage(); return go('learn'); }
+    } else if (act === 'ldone') { const nx = nextStep(); closePage(); return go(nx && nx.lesson && LESSONS.find((x) => x.id === nx.lesson).task ? 'learn' : 'trade'); }
     else if (act === 'saveRules') {
       const risk = parseFloat($('#rRisk').value), day = parseFloat($('#rDay').value), rr = parseFloat($('#rRr').value);
       if (![0.01, 0.02, 0.03].includes(risk) || ![0.03, 0.05, 0.08].includes(day) || ![1.5, 2, 3].includes(rr)) return;
@@ -2168,37 +2416,50 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     $('#pageFoot').hidden = true;
   }
 
+  function switchSym(sym) {
+    if (!E.SYM.test(sym)) return;
+    if (S.mode === 'sim' && !Sim.m[sym]) return toast('練習行情沒有這個幣');
+    state.settings.sym = sym;
+    S.off = 0; S.cross = null; S.drag = null; S.candles = [];
+    save();
+    syncTickers();
+    if (S.sheetKind) { S.sheetKind = null; $('#sheet').hidden = true; }
+    go('trade');
+    loadChart();
+  }
   function onAct(act, idRaw, el) {
     const id = /^-?\d+(\.\d+)?$/.test(idRaw || '') ? parseFloat(idRaw) : idRaw;
     switch (act) {
       case 'x': return closeSheet();
       case 'go': return go(id);
-      case 'sym':
-        if (!E.RANKS[state.rank].syms.includes(id)) return toast(id + ' 要到段位 3 才會解鎖');
-        state.settings.sym = id; S.off = 0; save(); render(); return loadChart();
-      case 'iv':
-        state.settings.interval = id; S.off = 0; state.flags.interval = true; save(); render(); return loadChart();
+      case 'coins': return renderCoins(false);
+      case 'sym': return switchSym(String(idRaw));
+      case 'iv': state.settings.interval = id; S.off = 0; S.cross = null; state.flags.interval = true; save(); render(); return loadChart();
       case 'ma': state.settings.ma = !state.settings.ma; save(); return render();
-      case 'order': return openOrder(id);
-      case 'kind': readOrder(); S.form.kind = id; S.form.err = ''; S.form.wkey = null; return renderOrder();
-      case 'lev': readOrder(); S.form.lev = id; S.form.wkey = null; return renderOrder();
-      case 'reason': S.form.reason = id; $$('#reasons button').forEach((b) => b.classList.toggle('on', b.dataset.id === id)); return;
-      case 'qamt': case 'qlimit': case 'qsl': case 'qtp': return fillQuick(act, id);
-      case 'submit': return submitOrder();
-      case 'close': return openClose(id);
-      case 'doClose': return doClose();
-      case 'stops': return openStops(id);
-      case 'ssl': case 'stp': {
-        const p = state.positions.find((x) => x.id === S.form.stopId);
-        if (!p) return;
-        const px = S.prices[p.sym], long = p.side === 'long';
-        if (act === 'ssl') $('#sSl').value = raw(px * (1 + (long ? -id : id) / 100));
-        else $('#sTp').value = raw(px * (1 + (long ? id : -id) / 100));
+      case 'book': return renderBook(false);
+      case 'amount': return openAmount();
+      case 'pct': if ([0.05, 0.1, 0.25, 0.5, 1].includes(id)) { state.settings.amtPct = id; save(); } openAmount(); return renderBar();
+      case 'lev': if (Number.isInteger(id) && id >= 1 && id <= E.RANKS[state.rank].maxLev) { state.settings.lev = id; save(); } openAmount(); return renderBar();
+      case 'buy': return tradeBuy(id, false);
+      case 'confirmBuy': closeSheet(); return tradeBuy(S.pendingSide, true);
+      case 'flat': { const p = curPos()[0]; if (p) closePos(p); return; }
+      case 'closeId': { const p = state.positions.find((x) => x.id === id); if (p) closePos(p); return; }
+      case 'cancel': { const r = E.cancelOrder(state, id); if (r.ok) { save(); toast('掛單已取消，資金已退回'); if (S.sheetKind === 'book') renderBook(true); tickUI(); markChart(); } return; }
+      case 'xclose': return hideCross();
+      case 'xlimit': return crossAct('xlimit', id);
+      case 'xsl': return crossAct('xsl');
+      case 'xtp': return crossAct('xtp');
+      case 'xlocked': return toast('掛單在第 3 關過關後解鎖');
+      case 'xlocked2': return toast('買跌在第 5 關過關後解鎖');
+      case 'reason': {
+        const r = E.setReason(state, S.reviewId, id);
+        if (!r.ok) return;
+        save();
+        const t = state.trades.find((x) => x.id === S.reviewId);
+        if (t) showReview(t, S.reviewFresh);
         return;
       }
-      case 'saveStops': return saveStops();
-      case 'cancel': { const r = E.cancelOrder(state, id); if (r.ok) { save(); render(); toast('掛單已取消，資金已退回'); } return; }
-      case 'lesson': if (S.sheetKind) closeSheet(); return openLesson(id);
+      case 'lesson': if (S.sheetKind) { S.sheetKind = null; $('#sheet').hidden = true; } return openLesson(id);
       case 'gloss': return openGloss();
       case 'pclose': return closePage();
       case 'term': { const t = el.dataset.t; if (GLOSSARY[t]) showInfo(t, [GLOSSARY[t]]); return; }
@@ -2214,7 +2475,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       case 'reset': return openSheet('info', '<h2>清除全部資料？</h2><div class="lines"><p>段位、交易紀錄、課程進度都會刪除，而且無法復原。</p></div><div class="cta"><button class="btn quiet" data-act="x">取消</button><button class="btn solid" data-act="doReset">確定清除</button></div>');
       case 'doReset': {
         const keep = S.everLive;
+        const cache = state.coinCache;
         state = E.newState(Date.now());
+        state.coinCache = cache;
         S.everLive = keep;
         S.queue = [];
         save(); closeSheet(); go('trade'); loadChart();
@@ -2224,7 +2487,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     }
   }
 
-  function boot() {
+  async function boot() {
     load();
     document.addEventListener('click', (e) => {
       const el = e.target.closest('[data-act]');
@@ -2234,18 +2497,22 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('term')) onAct('term', null, e.target);
-      if (e.key === 'Escape' && S.sheetKind) closeSheet();
+      if (e.key === 'Escape') { if (S.sheetKind) closeSheet(); else if (S.cross) hideCross(); }
     });
-    document.addEventListener('input', (e) => { if (S.sheetKind === 'order' && e.target.tagName === 'INPUT') { $('#oErr').textContent = ''; calcOrder(); } });
     $('#sheet .backdrop').addEventListener('click', () => closeSheet());
     $$('.tabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.dataset.v); }));
     $('#rankPill').addEventListener('click', () => go('learn'));
+    for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
     const h = (location.hash || '').slice(1);
     S.view = ['trade', 'learn', 'stats'].includes(h) ? h : 'trade';
-    for (const k of E.ALL) if (state.lastPrices[k] > 0) S.prices[k] = state.lastPrices[k];
+    for (const k of Object.keys(state.lastPrices)) S.prices[k] = state.lastPrices[k];
     setMode('connecting', false);
     render();
+    const fresh = state.coinCache && Date.now() - state.coinCache.t < 3 * 3600000;
+    if (!fresh) { try { await fetchTop(); save(); } catch (e) { S.topErr = true; } }
+    else setTimeout(() => fetchTop().then(() => { save(); syncTickers(); }).catch(() => { S.topErr = true; }), 1500);
     connect();
+    setInterval(() => { fetchTop().then(() => { save(); syncTickers(); if (S.sheetKind === 'coins') renderCoins(true); }).catch(() => { S.topErr = true; }); }, 30 * 60000);
     setInterval(() => {
       if (S.mode === 'live' && !S.stale && Date.now() - Live.last > 15000) { setMode('live', true); try { if (Live.ws) Live.ws.close(); } catch (e) { return; } }
     }, 5000);
@@ -2257,14 +2524,13 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     };
     requestAnimationFrame(loop);
     setInterval(() => { if (S.dirty) { S.dirty = false; tickUI(); } }, 1000);
-    window.addEventListener('resize', () => { drawChart(); drawSpark(); });
+    window.addEventListener('resize', () => { markChart(); drawSpark(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { S.hiddenAt = Date.now(); save(); }
       else if (S.mode === 'live' && Live.ws && Live.ws.readyState === 1 && S.hiddenAt && Date.now() - S.hiddenAt > 90000) onLiveReady(S.hiddenAt, false);
     });
     window.addEventListener('pagehide', save);
-    for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
-    window.__shidan = { S, get state() { return state; }, E, tick: onTick };
+    window.__shidan = { S, G, get state() { return state; }, E, tick: onTick, draw: drawChart };
   }
   boot();
 })();
