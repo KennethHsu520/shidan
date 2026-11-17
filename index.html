@@ -1596,7 +1596,7 @@ const TeamLearn = (() => {
         const p = T.plan(ind, k, i, s.side, s.stopRef);
         const res = T.simulate(k, i, p, s.side);
         if (!res) continue;
-        out.push({ key, r: res.r, f: features(ind, k, i, s.side, dirAt ? dirAt(k[i].t) : 'flat', s.volx) });
+        out.push({ key, r: res.r, t: k[i].t + (res.bars + 1) * 300000, f: features(ind, k, i, s.side, dirAt ? dirAt(k[i].t) : 'flat', s.volx) });
         busy[key] = i + res.bars;
       }
     }
@@ -2133,6 +2133,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     return out;
   }
   const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
+  let CLK = null;
   const TOPN = 50;
   const STOCKS = new Set(['NVDAB', 'SOXLB', 'TSLAB', 'AAPLB', 'MSTRB', 'COINB', 'GOOGLB', 'GOOGB', 'AMZNB', 'METAB', 'SPYB', 'QQQB', 'HOODB', 'CRCLB', 'MSFTB', 'AMDB', 'PLTRB', 'NFLXB', 'INTCB', 'ORCLB', 'UBERB', 'SHOPB', 'PYPLB', 'BABAB', 'GMEB', 'AMCB', 'DISB', 'JPMB', 'WMTB', 'COSTB', 'AVGOB', 'TSMB', 'ARMB', 'SMCIB', 'MUB', 'TQQQB', 'SQQQB', 'IWMB', 'GLDB', 'SLVB', 'USOB', 'IBITB', 'CONLB', 'NVDLB', 'TSLLB', 'MSTUB']);
   const CGKEY = 'gaoqian.cg2';
@@ -2998,6 +2999,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   }
   let toastT;
   function toast(msg) {
+    if (CLK != null) return;
     const t = $('#toast');
     t.innerHTML = '<span>' + esc(msg) + '</span>';
     clearTimeout(toastT);
@@ -3282,15 +3284,172 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     let r = null;
     try { r = JSON.parse(localStorage.getItem(TKEY)); } catch (e) { r = null; }
     TS.auto = r ? r.auto !== false : true;
+    TS.lastRun = r && typeof r.lastRun === 'number' && r.lastRun > 0 && r.lastRun <= Date.now() ? r.lastRun : 0;
+    if (TS.lastRun && Date.now() - TS.lastRun > GAP_MIN) { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }
     TS.log = Array.isArray(r && r.log) ? r.log.filter((x) => x && typeof x.t === 'number' && typeof x.text === 'string').map((x) => ({ t: x.t, text: x.text.slice(0, 160) })).slice(-30) : [];
     const okJ = (j) => j && typeof j.id === 'number' && typeof j.type === 'string' && Team.TYPES[j.type] && (j.side === 'long' || j.side === 'short') && E.SYM.test(j.sym) && (j.r == null || isFinite(j.r)) && (!j.f || typeof j.f === 'object');
     TS.journal = Array.isArray(r && r.journal) ? r.journal.filter(okJ).map((j) => ({ id: j.id, t0: +j.t0 || 0, t1: +j.t1 || null, sym: j.sym, type: j.type, side: j.side, f: j.f ? { align: String(j.f.align), vol: String(j.f.vol), rsi: String(j.f.rsi), sess: String(j.f.sess) } : null, est: j.est != null && isFinite(j.est) ? +j.est : null, grade: ['A', 'B', 'C'].includes(j.grade) ? j.grade : null, risk: j.risk != null && isFinite(j.risk) ? +j.risk : null, riskReal: j.riskReal != null && isFinite(j.riskReal) ? +j.riskReal : null, src: j.src === 'deleg' ? 'deleg' : 'auto', why: String(j.why || '').slice(0, 300), review: j.review ? String(j.review).slice(0, 400) : null, r: j.r == null ? null : +j.r, pnl: j.pnl != null && isFinite(j.pnl) ? +j.pnl : null, exit: typeof j.exit === 'string' ? j.exit.slice(0, 10) : null, ok: !!j.ok, cancel: !!j.cancel, explore: !!j.explore })).slice(-300) : [];
     TS.delegs = Array.isArray(r && r.delegs) ? r.delegs.filter((d) => d && E.SYM.test(d.sym) && (d.side === 'long' || d.side === 'short') && typeof d.until === 'number' && typeof d.id === 'string').slice(0, 20) : [];
   }
   function saveTeam() {
-    try { localStorage.setItem(TKEY, JSON.stringify({ v: 3, auto: TS.auto, log: TS.log, delegs: TS.delegs, journal: TS.journal })); } catch (e) { return; }
+    try { localStorage.setItem(TKEY, JSON.stringify({ v: 3, auto: TS.auto, log: TS.log, delegs: TS.delegs, journal: TS.journal, lastRun: TS.lastRun || 0 })); } catch (e) { return; }
   }
-  function teamLog(text) { TS.log.push({ t: Date.now(), text }); if (TS.log.length > 30) TS.log.splice(0, TS.log.length - 30); }
+  const BAR5 = 5 * 60000;
+  const GAP_MIN = 12 * 60000;
+  const GAP_MAX = 3 * 86400000;
+  async function fetchRange(sym, start, end) {
+    let out = [];
+    let t = start;
+    for (let p = 0; p < 6 && t < end; p++) {
+      const rows = await fetchKlines(sym, '5m', '&limit=1000&startTime=' + Math.floor(t) + '&endTime=' + Math.floor(end));
+      if (!rows.length) break;
+      out = out.concat(rows);
+      t = rows[rows.length - 1].t + BAR5;
+      if (rows.length < 1000) break;
+      await sleep(40);
+    }
+    const seen = new Set();
+    return out.filter((k) => (seen.has(k.t) ? false : (seen.add(k.t), true))).sort((a, b) => a.t - b.t);
+  }
+  function scopedCandle(sym, k, ids) {
+    const keep = state.positions.filter((p) => !ids.has(p.id));
+    const ords = state.orders;
+    state.positions = state.positions.filter((p) => ids.has(p.id));
+    state.orders = [];
+    let evs = [];
+    try { evs = E.onCandle(state, sym, k, S.prices); } finally {
+      state.positions = state.positions.concat(keep);
+      state.orders = ords;
+    }
+    return evs;
+  }
+  async function teamReplay() {
+    if (TS.replaying || TS.gapFrom == null) return;
+    if (S.mode !== 'live') { TS.gapFrom = null; return; }
+    TS.replaying = true;
+    const realNow = Date.now();
+    const from = Math.max(TS.gapFrom, realNow - GAP_MAX);
+    const end = Math.floor(realNow / BAR5) * BAR5;
+    TS.rpTotal = 0; TS.rpDone = 0;
+    const data = {};
+    try {
+      const syms = Array.from(new Set(['BTC'].concat(teamPos().map((p) => p.sym), TS.delegs.map((d) => d.sym), S.coins)));
+      TS.rpTotal = syms.length;
+      refreshTeam();
+      await pool(syms, 6, async (sym) => {
+        try { data[sym] = await fetchRange(sym, (sym === 'BTC' ? from - 4 * 86400000 : from - 160 * BAR5), end); } catch (e) { data[sym] = null; }
+        TS.rpDone++;
+        refreshTeam();
+      });
+    } catch (e) { data.err = true; }
+    const stats = runReplay(data, from, end);
+    TS.replaying = false;
+    TS.gapFrom = null;
+    TS.lastRun = end;
+    TS.nextScan = 0;
+    learnRebuild(true);
+    save();
+    saveTeam();
+    const hrs = (end - from) / 3600000;
+    const lines = ['團隊補跑了你不在的 ' + (hrs >= 24 ? (hrs / 24).toFixed(1) + ' 天' : hrs.toFixed(1) + ' 小時') + '，用的是當時幣安的真實 K 線。'];
+    if (stats.opened || stats.closed) {
+      lines.push('新開 ' + stats.opened + ' 筆、結束 ' + stats.closed + ' 筆：對 ' + stats.win + ' 筆、錯 ' + stats.loss + ' 筆，合計 ' + fS(stats.pnl) + ' USDT。');
+      lines.push('每一筆都寫進了團隊筆記，守則也照順序更新過。');
+    } else lines.push('這段時間沒有值得做的訊號，團隊沒有出手。');
+    if (from > TS.gapFromOrig) lines.push('超過 3 天的部分太舊，沒有補。');
+    if (stats.miss) lines.push('有 ' + stats.miss + ' 個幣讀不到資料，這些幣沒有補。');
+    S.queue.push({ kind: 'info', title: '你不在的時候', lines });
+    flushQueue();
+    refreshTeam();
+    if (S.view === 'trade') { tickUI(); drawChart(); }
+  }
+  function runReplay(data, from, end) {
+    const st = { opened: 0, closed: 0, win: 0, loss: 0, pnl: 0, miss: 0 };
+    const btc = data.BTC || [];
+    const dirAt = L.regimeSeries(btc);
+    const cs = {};
+    for (const sym of Object.keys(data)) {
+      const k = data[sym];
+      if (!Array.isArray(k) || k.length < 80) { if (sym !== 'err') st.miss++; continue; }
+      const idx = new Map();
+      k.forEach((x, i) => idx.set(x.t, i));
+      cs[sym] = { k, ind: Team.prepare(k), idx };
+    }
+    const saved = S.prices;
+    S.prices = Object.assign({}, saved);
+    for (const sym of Object.keys(cs)) {
+      const c = cs[sym];
+      let last = null;
+      for (const x of c.k) { if (x.t < from) last = x; else break; }
+      if (last) S.prices[sym] = last.c;
+    }
+    TS.rpOpen = new Set(teamPos().map((p) => p.id));
+    TS.sampleCut = from;
+    learnRebuild(true);
+    const tradesBefore = new Set(state.trades.map((t) => t.id));
+    const sigKeep = TS.signals;
+    TS.signals = [];
+    try {
+      for (let t = Math.floor(from / BAR5) * BAR5; t + BAR5 <= end; t += BAR5) {
+        CLK = t + BAR5;
+        const dir = dirAt(t);
+        const bars = [];
+        for (const sym of Object.keys(cs)) {
+          const c = cs[sym];
+          const i = c.idx.get(t);
+          if (i == null) continue;
+          bars.push([sym, c, i]);
+          const k = c.k[i];
+          scopedCandle(sym, k, TS.rpOpen);
+          S.prices[sym] = k.c;
+          for (const p of teamPos().filter((x) => x.sym === sym && TS.rpOpen.has(x.id))) {
+            if (p.until && CLK >= p.until) { E.closePosition(state, p.id, k.c, CLK, 'time', S.prices); continue; }
+            const ext = p.side === 'long' ? k.h : k.l;
+            if (!p.be && p.r0 > 0 && E.posPnl(p, ext) >= p.r0) {
+              const be = roundP(breakeven(p));
+              if ((p.side === 'long' ? be < k.c : be > k.c) && E.setStops(state, p.id, be, p.tp, k.c, true).ok) p.be = true;
+            }
+          }
+        }
+        for (const d of TS.delegs.slice()) if (CLK >= d.until) { TS.delegs = TS.delegs.filter((x) => x !== d); teamLog('委託到期：' + d.sym + ' 4 小時內沒有好的' + SIDE[d.side] + '進場點，已取消'); }
+        learnFromClosed();
+        for (const [sym, c, i] of bars) {
+          if (i < 70) continue;
+          for (const s of Team.detect(c.ind, c.k, i)) {
+            const pl = Team.plan(c.ind, c.k, i, s.side, s.stopRef);
+            const f = L.features(c.ind, c.k, i, s.side, dir, s.volx);
+            const rt = TS.rt[sym] || Team.ratios(c.k.slice(Math.max(0, i - 2000), i + 1));
+            if (!TS.rt[sym]) TS.rt[sym] = rt;
+            const rp = Team.replay(rt, pl, s.side, { runs: 400 });
+            addSignal(sym, Object.assign(s, { plan: pl, barT: c.k[i].t, f, replay: rp }), c.k);
+          }
+        }
+        TS.signals = TS.signals.filter((x) => CLK - x.barT < 30 * 60000);
+      }
+    } finally {
+      CLK = null;
+      TS.sampleCut = null;
+      const now = Date.now();
+      TS.signals = sigKeep.concat(TS.signals).filter((x) => now - x.barT < 30 * 60000);
+      for (const sym of Object.keys(saved)) if (saved[sym] > 0) S.prices[sym] = saved[sym];
+      const px = S.prices;
+      S.prices = saved;
+      for (const sym of Object.keys(px)) if (!(saved[sym] > 0)) saved[sym] = px[sym];
+      TS.rpOpen = null;
+    }
+    learnFromClosed();
+    state.trades.sort((a, b) => a.t1 - b.t1);
+    TS.journal.sort((a, b) => a.t0 - b.t0);
+    for (const t of state.trades) {
+      if (tradesBefore.has(t.id) || t.owner !== 'team') continue;
+      st.closed++; st.pnl += t.pnl;
+      if (t.pnl > 0) st.win++; else st.loss++;
+    }
+    st.opened = TS.journal.filter((j) => j.t0 >= from && j.t0 < end && j.src !== 'deleg').length + TS.journal.filter((j) => j.t0 >= from && j.t0 < end && j.src === 'deleg').length;
+    return st;
+  }
+  const nowT = () => (CLK != null ? CLK : Date.now());
+  function teamLog(text) { TS.log.push({ t: nowT(), text }); if (TS.log.length > 30) TS.log.splice(0, TS.log.length - 30); }
   const teamPos = () => state.positions.filter((p) => p.owner === 'team');
   function teamBudget() {
     const eq = E.equity(state, S.prices);
@@ -3384,7 +3543,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   function ruleId(r) { return r.kind + '|' + r.key + '|' + r.fk + ':' + r.val; }
   function learnRebuild(silent) {
     const before = new Set((TS.rules || []).map(ruleId));
-    TS.kb = L.build(TS.samples || [], TS.journal.filter((j) => !j.cancel));
+    const cut = TS.sampleCut;
+    TS.kb = L.build(cut ? (TS.samples || []).filter((x) => !x.t || x.t < cut) : TS.samples || [], TS.journal.filter((j) => !j.cancel));
     TS.rules = L.rules(TS.kb);
     const after = new Set(TS.rules.map(ruleId));
     const added = TS.rules.filter((r) => !before.has(ruleId(r)));
@@ -3420,6 +3580,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       TS.err = null;
     } catch (e) { TS.err = '這次掃描失敗，下一分鐘會再試'; }
     TS.scanning = false;
+    if (!TS.err) TS.lastRun = Date.now();
     const nowS = Date.now();
     const bar = 5 * 60000;
     TS.nextScan = Math.min(nowS + 60000, Math.floor(nowS / bar) * bar + bar + 4000);
@@ -3436,12 +3597,12 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const replay = s.replay || Team.replay(rt, s.plan, s.side, { runs: 10000 });
     const f = s.f || { align: 'flat', vol: 'mid', rsi: 'mid', sess: L.session(s.barT) };
     const dec = TS.kb ? L.decide(TS.kb, TS.rules || [], key, f, replay) : { go: false, est: 0, why: '時光機還在讀資料', avoid: [], prefer: [] };
-    const sig = { id, sym, type: s.type, side: s.side, plan: s.plan, barT: s.barT, seen: Date.now(), grade: res ? res.grade : null, replay, volx: s.volx, f, dec };
+    const sig = { id, sym, type: s.type, side: s.side, plan: s.plan, barT: s.barT, seen: nowT(), grade: res ? res.grade : null, replay, volx: s.volx, f, dec };
     TS.signals.unshift(sig);
     for (const p of teamPos().filter((x) => x.sym === sym && x.side !== s.side)) {
       const px = S.prices[sym];
       if (!(px > 0)) continue;
-      const r = E.closePosition(state, p.id, px, Date.now(), 'flip', S.prices);
+      const r = E.closePosition(state, p.id, px, nowT(), 'flip', S.prices);
       if (r.ok) { teamLog('團隊 ' + sym + ' 出現反方向訊號，提早出場 ' + fS(r.trade.pnl) + ' USDT'); toast('團隊 ' + sym + ' 反向訊號出場 ' + fS(r.trade.pnl)); afterClose(); }
     }
     const d = TS.delegs.find((x) => x.sym === sym && x.side === s.side);
@@ -3486,17 +3647,18 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       amount = Math.floor(amount * 100) / 100;
     }
     if (!(amount >= E.MIN_AMOUNT)) return false;
-    const r = E.openPosition(state, { sym: sig.sym, side: sig.side, lev: 1, amount, price: px, reason: Team.TYPES[sig.type].reason, now: Date.now(), ctx: null, owner: 'team', src: deleg ? 'deleg' : 'auto' }, S.prices);
+    const r = E.openPosition(state, { sym: sig.sym, side: sig.side, lev: 1, amount, price: px, reason: Team.TYPES[sig.type].reason, now: nowT(), ctx: null, owner: 'team', src: deleg ? 'deleg' : 'auto' }, S.prices);
     if (!r.ok) return false;
     E.setStops(state, r.pos.id, roundP(stop), roundP(target), px, true);
-    r.pos.until = Date.now() + Team.HOLD * 5 * 60000;
+    r.pos.until = nowT() + Team.HOLD * 5 * 60000;
     r.pos.sig = sig.type;
     if (explore) r.pos.explore = true;
     const actualRisk = b.alloc > 0 ? (Math.abs(px - stop) * r.pos.qty) / b.alloc : null;
-    TS.journal.push({ id: r.pos.id, t0: Date.now(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', explore: !!explore, why: (explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
+    TS.journal.push({ id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', explore: !!explore, why: (explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
     if (TS.journal.length > 300) TS.journal.splice(0, TS.journal.length - 300);
     teamLog((deleg ? '委託成交：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
-    if (!deleg) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
+    if (!deleg && CLK == null) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
+    if (CLK != null) { TS.rpOpen.add(r.pos.id); return true; }
     save();
     saveTeam();
     if (S.view === 'trade') { tickUI(); drawChart(); }
@@ -3533,7 +3695,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (changed) { saveTeam(); refreshTeam(); }
   }
   function teamManage() {
-    const now = Date.now();
+    const now = nowT();
     let changed = false;
     for (const p of teamPos()) {
       const px = S.prices[p.sym];
@@ -3573,12 +3735,15 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   }
   function fLeft(ms) { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + ' 小時 ' + (m % 60) + ' 分' : m + ' 分'; }
   function refreshTeam() {
+    if (CLK != null) return;
     if (S.view === 'team' && !S.lesson) patch($('#view'), viewTeam());
   }
   function teamPulse() {
     if (!teamReady()) return;
     if (!TS.started) { TS.started = true; loadAllHistory(); return; }
     if (!TS.loading && TS.loadedAt && Date.now() - TS.loadedAt > 6 * 3600000) { loadAllHistory(); return; }
+    if (TS.lastRun && !TS.replaying && TS.gapFrom == null && Date.now() - TS.lastRun > GAP_MIN && S.mode === 'live') { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }
+    if (TS.gapFrom != null) { if (TS.kb && !TS.loading) teamReplay(); teamManage(); learnFromClosed(); refreshTeam(); return; }
     if (!TS.scanning && Date.now() >= TS.nextScan) teamScan();
     else teamManage();
     learnFromClosed();
@@ -3660,7 +3825,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const sigs = TS.signals.filter((s) => (s.dec && s.dec.go) || s.grade === 'A' || s.grade === 'B').slice(0, 15);
     const now = Date.now();
     const next = Math.max(0, Math.round((TS.nextScan - now) / 1000));
-    const status = !teamReady() ? '等行情連上才會開始工作' : TS.loading ? '時光機讀取 14 天資料 ' + TS.loaded + ' / ' + TS.total + '，同時照常掃描' : TS.scanning ? '正在掃描前 ' + S.coins.length + ' 大幣' : TS.lastScan ? '最後掃描 ' + fHM(TS.lastScan) + '　下次 ' + next + ' 秒後' : '準備掃描';
+    const status = !teamReady() ? '等行情連上才會開始工作' : TS.replaying ? '正在補跑你不在的時間：讀取 ' + TS.rpDone + ' / ' + TS.rpTotal + ' 個幣' : TS.gapFrom != null ? '時光機讀完資料後，會補跑你不在的時間' : TS.loading ? '時光機讀取 14 天資料 ' + TS.loaded + ' / ' + TS.total + '，同時照常掃描' : TS.scanning ? '正在掃描前 ' + S.coins.length + ' 大幣' : TS.lastScan ? '最後掃描 ' + fHM(TS.lastScan) + '　下次 ' + next + ' 秒後' : '準備掃描';
     const keys = TS.results ? Object.values(TS.results).sort((a, b) => a.grade.localeCompare(b.grade) || (b.mc ? b.mc.p50 : -99) - (a.mc ? a.mc.p50 : -99)) : [];
     const rk = todayRisk();
     const bd = teamBudget();
