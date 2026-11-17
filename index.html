@@ -360,6 +360,8 @@ button.row.coin.held { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10
 .sig .body .sub { display: block; }
 small.pn { color: var(--muted); font-size: 11px; }
 .big small { white-space: nowrap; }
+.exbar { height: 3px; background: var(--line); margin: 12px 0 4px; }
+.exbar i { display: block; height: 100%; background: var(--ink); }
 
 </style>
 </head>
@@ -1512,11 +1514,16 @@ const Team = (() => {
     return { dir, up, down, chg: c / ind.c[back] - 1, vol: ind.atr[n] / c, price: c };
   }
 
-  function latest(k, dir) {
+  function latest(k, dir, back) {
     if (!k || k.length < 70) return [];
     const ind = prepare(k);
-    const i = k.length - 2;
-    return detect(ind, k, i).map((s) => Object.assign(s, { plan: plan(ind, k, i, s.side, s.stopRef), barT: k[i].t, rsi: ind.rsi[i], f: typeof TeamLearn !== 'undefined' ? TeamLearn.features(ind, k, i, s.side, dir, s.volx) : null }));
+    const out = [];
+    for (let b = Math.max(1, back || 1); b >= 1; b--) {
+      const i = k.length - 1 - b;
+      if (i < 60) continue;
+      for (const s of detect(ind, k, i)) out.push(Object.assign(s, { plan: plan(ind, k, i, s.side, s.stopRef), barT: k[i].t, rsi: ind.rsi[i], f: typeof TeamLearn !== 'undefined' ? TeamLearn.features(ind, k, i, s.side, dir, s.volx) : null }));
+    }
+    return out;
   }
 
   function riskSize(eq, cash, p, riskPct, capPct) {
@@ -2128,11 +2135,13 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
   const TOPN = 50;
   const STOCKS = new Set(['NVDAB', 'SOXLB', 'TSLAB', 'AAPLB', 'MSTRB', 'COINB', 'GOOGLB', 'GOOGB', 'AMZNB', 'METAB', 'SPYB', 'QQQB', 'HOODB', 'CRCLB', 'MSFTB', 'AMDB', 'PLTRB', 'NFLXB', 'INTCB', 'ORCLB', 'UBERB', 'SHOPB', 'PYPLB', 'BABAB', 'GMEB', 'AMCB', 'DISB', 'JPMB', 'WMTB', 'COSTB', 'AVGOB', 'TSMB', 'ARMB', 'SMCIB', 'MUB', 'TQQQB', 'SQQQB', 'IWMB', 'GLDB', 'SLVB', 'USOB', 'IBITB', 'CONLB', 'NVDLB', 'TSLLB', 'MSTUB']);
-  const CGKEY = 'gaoqian.cg';
+  const CGKEY = 'gaoqian.cg2';
+  const CRYPTO_B = new Set(['BNB', 'ARB', 'TRB', 'BB', 'AB', 'SB', 'XAB', 'MDB', 'TNB', 'KNCB']);
+  const NOT_CRYPTO = /tokeni[sz]ed|stock|xstock|ondo .*(etf|fund)|wrapped|bridged|staked|liquid staking|gold|silver|treasury|t-bill|\bfund\b|\betf\b/i;
   async function cryptoSet() {
     try {
       const c = JSON.parse(localStorage.getItem(CGKEY));
-      if (c && Date.now() - c.t < 24 * 3600000 && Array.isArray(c.list) && c.list.length > 100) return new Set(c.list);
+      if (c && Date.now() - c.t < 24 * 3600000 && Array.isArray(c.ok) && c.ok.length > 100 && Array.isArray(c.bad)) return { ok: new Set(c.ok), bad: new Set(c.bad) };
     } catch (e) { S.cgErr = 1; }
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), 7000);
@@ -2140,12 +2149,27 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1', { signal: ctl.signal });
       if (!res.ok) throw new Error('http');
       const rows = await res.json();
-      const list = Array.isArray(rows) ? rows.map((x) => (x && typeof x.symbol === 'string' ? x.symbol.toUpperCase() : '')).filter((x) => E.SYM.test(x)) : [];
-      if (list.length < 100) throw new Error('few');
-      try { localStorage.setItem(CGKEY, JSON.stringify({ t: Date.now(), list })); } catch (e) { S.cgErr = 2; }
+      const ok = [], bad = [];
+      for (const x of Array.isArray(rows) ? rows : []) {
+        if (!x || typeof x.symbol !== 'string') continue;
+        const sym = x.symbol.toUpperCase();
+        if (!E.SYM.test(sym)) continue;
+        const name = typeof x.name === 'string' ? x.name : '';
+        (NOT_CRYPTO.test(name) || NOT_CRYPTO.test(typeof x.id === 'string' ? x.id.replace(/-/g, ' ') : '') ? bad : ok).push(sym);
+      }
+      if (ok.length < 100) throw new Error('few');
+      const okS = ok.filter((x) => !bad.includes(x));
+      try { localStorage.setItem(CGKEY, JSON.stringify({ t: Date.now(), ok: okS, bad })); } catch (e) { S.cgErr = 2; }
       S.cgOk = true;
-      return new Set(list);
+      return { ok: new Set(okS), bad: new Set(bad) };
     } catch (e) { S.cgOk = false; return null; } finally { clearTimeout(tm); }
+  }
+  function isCrypto(base, cg) {
+    if (!E.SYM.test(base) || STABLE.has(base) || STOCKS.has(base) || /(UP|DOWN|BULL|BEAR)$/.test(base)) return false;
+    if (/^(PAXG|XAUT|XAUM|KAU|KAG)$/.test(base)) return false;
+    if (cg && cg.bad.has(base)) return false;
+    if (cg) return cg.ok.has(base);
+    return !(/^[A-Z]{2,6}B$/.test(base) && !CRYPTO_B.has(base));
   }
   async function fetchTop() {
     const cg = await cryptoSet();
@@ -2155,8 +2179,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     for (const r of rows) {
       if (!r || typeof r.symbol !== 'string' || !r.symbol.endsWith('USDT')) continue;
       const base = r.symbol.slice(0, -4);
-      if (!E.SYM.test(base) || STABLE.has(base) || STOCKS.has(base) || /(UP|DOWN|BULL|BEAR)$/.test(base)) continue;
-      if (cg && !cg.has(base)) continue;
+      if (!isCrypto(base, cg)) continue;
       const qv = +r.quoteVolume, last = +r.lastPrice, open = +r.openPrice;
       if (!(qv > 0) || !(last > 0)) continue;
       list.push({ base, qv, last, chg: open > 0 ? last / open - 1 : 0 });
@@ -2998,7 +3021,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   function holdInfo(s) {
     const P = state.positions.filter((p) => p.sym === s);
     const O = state.orders.filter((o) => o.sym === s);
-    if (!P.length && !O.length) return '';
+    const D = TS.delegs.filter((d) => d.sym === s);
+    if (!P.length && !O.length && !D.length) return '';
     let pnl = 0, margin = 0;
     const parts = [];
     for (const p of P) {
@@ -3012,10 +3036,11 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       parts.push((P.some((p) => p.owner === 'team') ? '<span class="who">團隊</span>' : '') + '<span class="hold-side ' + (P[0].side === 'long' ? 'up' : 'down') + '">' + sides.join('／') + '</span>' + fQ(qty) + ' 顆　<b class="' + cls(pnl) + '">' + fS(pnl) + '</b> <span class="' + cls(pnl) + '">' + fPct(pnl / margin) + '</span>');
     }
     if (O.length) parts.push('掛單 ' + O.length + ' 張');
+    if (D.length) parts.push('<span class="who">委託團隊</span><span class="hold-side ' + (D[0].side === 'long' ? 'up' : 'down') + '">' + SIDE[D[0].side] + '</span>等進場　剩 ' + fLeft(D[0].until - Date.now()));
     return '<span class="hold">' + parts.join('　') + '</span>';
   }
   function coinRows() {
-    const held = Array.from(new Set(state.positions.map((p) => p.sym).concat(state.orders.map((o) => o.sym))));
+    const held = Array.from(new Set(state.positions.map((p) => p.sym).concat(state.orders.map((o) => o.sym), TS.delegs.map((d) => d.sym))));
     const list = S.coins.slice();
     for (const s of held.concat([state.settings.sym])) if (!list.includes(s)) list.push(s);
     return list.map((s) => {
@@ -3028,8 +3053,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const ords = state.orders.length;
     let pnl = 0;
     for (const p of state.positions) pnl += E.posValue(p, S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry) - p.margin;
-    if (!held.size && !ords) return '<div class="sub">目前沒有持倉。</div>';
-    return '<div class="hold-sum">持倉中 <b>' + held.size + '</b> 個幣' + (ords ? '　掛單 <b>' + ords + '</b> 張' : '') + (held.size ? '　未實現 <b class="' + cls(pnl) + '">' + fS(pnl) + '</b>' : '') + '</div>';
+    const dl = TS.delegs.length;
+    if (!held.size && !ords && !dl) return '<div class="sub">目前沒有持倉。</div>';
+    return '<div class="hold-sum">持倉中 <b>' + held.size + '</b> 個幣' + (ords ? '　掛單 <b>' + ords + '</b> 張' : '') + (dl ? '　委託團隊 <b>' + dl + '</b> 個' : '') + (held.size ? '　未實現 <b class="' + cls(pnl) + '">' + fS(pnl) + '</b>' : '') + '</div>';
   }
   function renderCoins(soft) {
     if (soft) { patch($('.coins-list'), coinRows()); patch($('#coinsHead'), coinsHead()); return; }
@@ -3044,7 +3070,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         const r = posR(p, px);
         return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b>' + (p.owner === 'team' ? '<span class="tag who-t">團隊管</span>' : '') + '<span class="tag">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span><div class="sub">' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '　打平 ' + fP(breakeven(p)) + '</div><div class="sub">' + (p.sl != null ? '停損 ' + fP(p.sl) : '未設停損') + '　' + (p.tp != null ? '停利 ' + fP(p.tp) : '未設停利') + (E.isLev(p) ? '　強平 ' + fP(p.liq) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button>' + (p.owner === 'team' ? '<button class="btn sm" data-act="takeover" data-id="' + p.id + '">改由我管</button>' : '') + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
       }).join('') + '</div>' : '<div class="empty">沒有持倉。</div>') +
-      (TS.delegs.length ? '<h3 style="margin-top:22px">委託團隊</h3><div class="list">' + TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">等團隊判斷進場點　剩 ' + fLeft(d.until - Date.now()) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>').join('') + '</div>' : '') +
+      (TS.delegs.length ? '<h3 style="margin-top:22px">委託團隊</h3><div class="list">' + TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">' + delegTxt() + '　剩 ' + fLeft(d.until - Date.now()) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>').join('') + '</div>' : '') +
       '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。點一下走勢圖就能掛單。</div>') +
       '<div class="cta"><button class="btn solid" data-act="x">關閉</button></div>';
     if (soft) { patch($('#sheetBody'), html); return; }
@@ -3258,7 +3284,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     TS.auto = r ? r.auto !== false : true;
     TS.log = Array.isArray(r && r.log) ? r.log.filter((x) => x && typeof x.t === 'number' && typeof x.text === 'string').map((x) => ({ t: x.t, text: x.text.slice(0, 160) })).slice(-30) : [];
     const okJ = (j) => j && typeof j.id === 'number' && typeof j.type === 'string' && Team.TYPES[j.type] && (j.side === 'long' || j.side === 'short') && E.SYM.test(j.sym) && (j.r == null || isFinite(j.r)) && (!j.f || typeof j.f === 'object');
-    TS.journal = Array.isArray(r && r.journal) ? r.journal.filter(okJ).map((j) => ({ id: j.id, t0: +j.t0 || 0, t1: +j.t1 || null, sym: j.sym, type: j.type, side: j.side, f: j.f ? { align: String(j.f.align), vol: String(j.f.vol), rsi: String(j.f.rsi), sess: String(j.f.sess) } : null, est: isFinite(j.est) ? +j.est : null, grade: ['A', 'B', 'C'].includes(j.grade) ? j.grade : null, risk: isFinite(j.risk) ? +j.risk : null, riskReal: isFinite(j.riskReal) ? +j.riskReal : null, src: j.src === 'deleg' ? 'deleg' : 'auto', why: String(j.why || '').slice(0, 300), review: j.review ? String(j.review).slice(0, 400) : null, r: j.r == null ? null : +j.r, pnl: isFinite(j.pnl) ? +j.pnl : null, exit: typeof j.exit === 'string' ? j.exit.slice(0, 10) : null, ok: !!j.ok, cancel: !!j.cancel })).slice(-300) : [];
+    TS.journal = Array.isArray(r && r.journal) ? r.journal.filter(okJ).map((j) => ({ id: j.id, t0: +j.t0 || 0, t1: +j.t1 || null, sym: j.sym, type: j.type, side: j.side, f: j.f ? { align: String(j.f.align), vol: String(j.f.vol), rsi: String(j.f.rsi), sess: String(j.f.sess) } : null, est: j.est != null && isFinite(j.est) ? +j.est : null, grade: ['A', 'B', 'C'].includes(j.grade) ? j.grade : null, risk: j.risk != null && isFinite(j.risk) ? +j.risk : null, riskReal: j.riskReal != null && isFinite(j.riskReal) ? +j.riskReal : null, src: j.src === 'deleg' ? 'deleg' : 'auto', why: String(j.why || '').slice(0, 300), review: j.review ? String(j.review).slice(0, 400) : null, r: j.r == null ? null : +j.r, pnl: j.pnl != null && isFinite(j.pnl) ? +j.pnl : null, exit: typeof j.exit === 'string' ? j.exit.slice(0, 10) : null, ok: !!j.ok, cancel: !!j.cancel, explore: !!j.explore })).slice(-300) : [];
     TS.delegs = Array.isArray(r && r.delegs) ? r.delegs.filter((d) => d && E.SYM.test(d.sym) && (d.side === 'long' || d.side === 'short') && typeof d.until === 'number' && typeof d.id === 'string').slice(0, 20) : [];
   }
   function saveTeam() {
@@ -3377,13 +3403,13 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const btc = S.mode === 'sim' ? simAgg('BTC', 60).slice(-150) : await fetchKlines('BTC', '1h', '&limit=150');
       TS.regime = Team.regime(btc);
       const dir = TS.regime ? TS.regime.dir : 'flat';
-      const syms = Array.from(new Set(S.coins.concat(TS.delegs.map((d) => d.sym), teamPos().map((p) => p.sym))));
+      const syms = Array.from(new Set(TS.delegs.map((d) => d.sym).concat(teamPos().map((p) => p.sym), S.coins)));
       TS.recent = TS.recent || {};
-      await pool(syms, S.mode === 'sim' ? 1 : 5, async (sym) => {
+      await pool(syms, S.mode === 'sim' ? 1 : 8, async (sym) => {
         try {
           const k = S.mode === 'sim' ? simAgg(sym, 5).slice(-150) : await fetchKlines(sym, '5m', '&limit=150');
           if (k.length > 20) TS.recent[sym] = k;
-          for (const s of Team.latest(k, dir)) addSignal(sym, s, k);
+          for (const s of Team.latest(k, dir, 3)) addSignal(sym, s, k);
         } catch (e) { TS.scanErr = (TS.scanErr || 0) + 1; }
       });
       const now = Date.now();
@@ -3394,7 +3420,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       TS.err = null;
     } catch (e) { TS.err = '這次掃描失敗，下一分鐘會再試'; }
     TS.scanning = false;
-    TS.nextScan = Date.now() + 60000;
+    const nowS = Date.now();
+    const bar = 5 * 60000;
+    TS.nextScan = Math.min(nowS + 60000, Math.floor(nowS / bar) * bar + bar + 4000);
     save();
     saveTeam();
     refreshTeam();
@@ -3417,26 +3445,43 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (r.ok) { teamLog('團隊 ' + sym + ' 出現反方向訊號，提早出場 ' + fS(r.trade.pnl) + ' USDT'); toast('團隊 ' + sym + ' 反向訊號出場 ' + fS(r.trade.pnl)); afterClose(); }
     }
     const d = TS.delegs.find((x) => x.sym === sym && x.side === s.side);
-    if (d && (dec.go || sig.grade === 'A' || sig.grade === 'B')) {
+    if (d && (dec.go || sig.grade === 'A' || sig.grade === 'B' || (exploreState().on && !(dec.avoid && dec.avoid.length)))) {
       if (teamTrade(sig, true)) { TS.delegs = TS.delegs.filter((x) => x !== d); toast('委託成交：團隊' + SIDE[s.side] + ' ' + sym); }
       return;
     }
-    if (TS.auto && dec.go) teamTrade(sig, false);
+    if (!TS.auto) return;
+    if (dec.go) { teamTrade(sig, false, false); return; }
+    const ex = exploreState();
+    if (ex.on && ex.open < EXPLORE_OPEN) { sig.explore = true; teamTrade(sig, false, true); return; }
+    if (!ex.on && ex.open < 2 && !(dec.avoid && dec.avoid.length) && dec.est != null && dec.est > -0.15 && Math.random() < 0.2) { sig.explore = true; teamTrade(sig, false, true); }
   }
-  function teamTrade(sig, deleg) {
+  const EXPLORE_N = 30;
+  const EXPLORE_OPEN = 6;
+  const EXPLORE_RISK = 0.0025;
+  function exploreState() {
+    const done = TS.journal.filter((j) => !j.cancel && j.src !== 'deleg' && j.r != null).length;
+    const open = teamPos().filter((p) => p.explore).length;
+    const n = TS.exN != null ? TS.exN : typeof window.__gqExN === 'number' ? window.__gqExN : EXPLORE_N;
+    return { on: done < n, done, open };
+  }
+  function teamTrade(sig, deleg, explore) {
     if (teamPos().some((p) => p.sym === sig.sym)) return false;
     if (sig.side === 'short' && !E.canShort(state)) return false;
     const px = S.prices[sig.sym] || sig.plan.entry;
     const long = sig.side === 'long';
     const { stop, target } = sig.plan;
     if (long ? !(px > stop && px < target) : !(px < stop && px > target)) return false;
+    if (Math.abs(px - sig.plan.entry) > 0.5 * Math.abs(sig.plan.entry - stop)) return false;
     let amount, risk = null, notes = [];
     const b = teamBudget();
     if (deleg) amount = Math.min(orderAmount().amount, E.maxAmount(state.cash, 1, sig.side));
     else {
       if (state.settings.teamPct <= 0 || b.room < E.MIN_AMOUNT) return false;
-      const sz = L.sizing(TS.journal.filter((j) => !j.cancel), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(TS.journal, b.alloc) });
-      risk = sz.risk; notes = sz.notes;
+      if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
+      else {
+        const sz = L.sizing(TS.journal.filter((j) => !j.cancel && !j.explore), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(TS.journal, b.alloc) });
+        risk = sz.risk; notes = sz.notes;
+      }
       amount = Math.min(Team.riskSize(b.alloc, state.cash, { entry: px, dist: Math.abs(px - stop) }, risk, 1), b.room, E.maxAmount(state.cash, 1, sig.side));
       amount = Math.floor(amount * 100) / 100;
     }
@@ -3446,15 +3491,21 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     E.setStops(state, r.pos.id, roundP(stop), roundP(target), px, true);
     r.pos.until = Date.now() + Team.HOLD * 5 * 60000;
     r.pos.sig = sig.type;
+    if (explore) r.pos.explore = true;
     const actualRisk = b.alloc > 0 ? (Math.abs(px - stop) * r.pos.qty) / b.alloc : null;
-    TS.journal.push({ id: r.pos.id, t0: Date.now(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', why: (sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
+    TS.journal.push({ id: r.pos.id, t0: Date.now(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', explore: !!explore, why: (explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
     if (TS.journal.length > 300) TS.journal.splice(0, TS.journal.length - 300);
-    teamLog((deleg ? '委託成交：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
+    teamLog((deleg ? '委託成交：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
     if (!deleg) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
     save();
     saveTeam();
-    if (S.view === 'trade') render();
+    if (S.view === 'trade') { tickUI(); drawChart(); }
     return true;
+  }
+  function delegTxt() { return exploreState().on ? '試單期：出現這方向的訊號就進場' : '等團隊判斷會賺的訊號才進場'; }
+  function exploreWhy(sig) {
+    const ex = exploreState();
+    return (ex.on ? '試單期（已完成 ' + ex.done + ' / ' + EXPLORE_N + ' 筆）：先小量什麼訊號都做，累積經驗' : '探索：這類的單還沒把握，小量做來驗證') + (sig.dec && sig.dec.est != null ? '。目前預估 ' + L.fmtR(sig.dec.est) : '');
   }
   function learnFromClosed() {
     let changed = false;
@@ -3501,7 +3552,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     for (const d of TS.delegs.slice()) {
       if (now >= d.until) { TS.delegs = TS.delegs.filter((x) => x !== d); teamLog('委託到期：' + d.sym + ' 4 小時內沒有好的' + SIDE[d.side] + '進場點，已取消'); toast('委託到期：' + d.sym + ' 沒等到好的進場點'); changed = true; }
     }
-    if (changed) { afterClose(); save(); saveTeam(); if (S.view === 'trade') render(); }
+    if (changed) { afterClose(); save(); saveTeam(); if (S.view === 'trade') { tickUI(); drawChart(); } }
   }
   function createDeleg(side) {
     const sym = state.settings.sym;
@@ -3511,7 +3562,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (teamPos().some((p) => p.sym === sym)) return toast('團隊已經有一筆 ' + sym + ' 在手上');
     if (TS.delegs.some((d) => d.sym === sym)) return toast(sym + ' 已經有委託在等了');
     const now = Date.now();
-    const ready = TS.signals.find((s) => s.sym === sym && s.side === side && now - s.barT < 15 * 60000 && ((s.dec && s.dec.go) || s.grade === 'A' || s.grade === 'B'));
+    const ready = TS.signals.find((s) => s.sym === sym && s.side === side && now - s.barT < 15 * 60000 && ((s.dec && s.dec.go) || s.grade === 'A' || s.grade === 'B' || (exploreState().on && !(s.dec && s.dec.avoid && s.dec.avoid.length))));
     if (ready && teamTrade(ready, true)) { toast('團隊判斷現在就是好時機，已' + SIDE[side] + ' ' + sym); return; }
     TS.delegs.push({ id: 'd' + now, sym, side, t: now, until: now + DELEG_MS });
     teamLog('收到委託：' + sym + ' ' + SIDE[side] + '，等進場點，最多 4 小時');
@@ -3528,7 +3579,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (!teamReady()) return;
     if (!TS.started) { TS.started = true; loadAllHistory(); return; }
     if (!TS.loading && TS.loadedAt && Date.now() - TS.loadedAt > 6 * 3600000) { loadAllHistory(); return; }
-    if (!TS.loading && !TS.scanning && Date.now() >= TS.nextScan) teamScan();
+    if (!TS.scanning && Date.now() >= TS.nextScan) teamScan();
     else teamManage();
     learnFromClosed();
     refreshTeam();
@@ -3579,9 +3630,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
       const v = E.posValue(p, px) - p.margin;
       const r = posR(p, px);
-      return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b><span class="tag ' + (p.side === 'long' ? 'up' : 'down') + '">' + SIDE[p.side] + '</span><span class="tag">' + (p.src === 'deleg' ? '你委託的' : '團隊自己找的') + '</span><div class="sub">進場 ' + fP(p.entry) + '　停損 ' + fP(p.sl) + '　停利 ' + fP(p.tp) + (p.until ? '　剩 ' + fLeft(p.until - now) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button><button class="btn sm" data-act="takeover" data-id="' + p.id + '">改由我管</button>' + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
+      return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b><span class="tag ' + (p.side === 'long' ? 'up' : 'down') + '">' + SIDE[p.side] + '</span><span class="tag">' + (p.src === 'deleg' ? '你委託的' : p.explore ? '試單' : '團隊判斷的') + '</span><div class="sub">進場 ' + fP(p.entry) + '　停損 ' + fP(p.sl) + '　停利 ' + fP(p.tp) + (p.until ? '　剩 ' + fLeft(p.until - now) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button><button class="btn sm" data-act="takeover" data-id="' + p.id + '">改由我管</button>' + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
     });
-    const ds = TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">等團隊判斷進場點　剩 ' + fLeft(d.until - now) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>');
+    const ds = TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">' + delegTxt() + '　剩 ' + fLeft(d.until - now) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>');
     return rows.concat(ds).join('');
   }
   function riskSvg(J) {
@@ -3596,7 +3647,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   function journalRows(J) {
     return J.slice(-10).reverse().map((j) => {
       const st = j.cancel ? '<span class="vd vx">不計</span>' : j.r == null ? '<span class="vd vo">進行中</span>' : j.ok ? '<span class="vd vy">對</span>' : '<span class="vd vn">錯</span>';
-      return '<div class="row jrow"><div class="row-main"><div>' + st + '<b>' + esc(j.sym) + '</b><span class="tag ' + (j.side === 'long' ? 'up' : 'down') + '">' + SIDE[j.side] + '</span><span class="sub">　' + Team.TYPES[j.type].name + (j.src === 'deleg' ? '・你委託' : '') + '</span></div><div class="right"><b class="' + (j.r != null ? cls(j.r) : '') + '">' + (j.r != null ? L.fmtR(j.r) : '—') + '</b><div class="sub">預估 ' + (j.est != null ? L.fmtR(j.est) : '—') + (j.risk ? '　風險 ' + (j.risk * 100).toFixed(2) + '%' : '') + '</div></div></div><p class="jw">' + esc(fT(j.t0)) + '　' + esc(featTxt(j.f)) + '</p><p class="jw">為什麼做：' + esc(j.why || '—') + '</p>' + (j.review ? '<p class="jw jr">檢討：' + esc(j.review) + '</p>' : '') + '</div>';
+      return '<div class="row jrow"><div class="row-main"><div>' + st + '<b>' + esc(j.sym) + '</b><span class="tag ' + (j.side === 'long' ? 'up' : 'down') + '">' + SIDE[j.side] + '</span><span class="sub">　' + Team.TYPES[j.type].name + (j.src === 'deleg' ? '・你委託' : j.explore ? '・試單' : '') + '</span></div><div class="right"><b class="' + (j.r != null ? cls(j.r) : '') + '">' + (j.r != null ? L.fmtR(j.r) : '—') + '</b><div class="sub">預估 ' + (j.est != null ? L.fmtR(j.est) : '—') + (j.risk ? '　風險 ' + (j.risk * 100).toFixed(2) + '%' : '') + '</div></div></div><p class="jw">' + esc(fT(j.t0)) + '　' + esc(featTxt(j.f)) + '</p><p class="jw">為什麼做：' + esc(j.why || '—') + '</p>' + (j.review ? '<p class="jw jr">檢討：' + esc(j.review) + '</p>' : '') + '</div>';
     }).join('');
   }
   function ruleRows(list) {
@@ -3609,7 +3660,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const sigs = TS.signals.filter((s) => (s.dec && s.dec.go) || s.grade === 'A' || s.grade === 'B').slice(0, 15);
     const now = Date.now();
     const next = Math.max(0, Math.round((TS.nextScan - now) / 1000));
-    const status = !teamReady() ? '等行情連上才會開始工作' : TS.loading ? '時光機正在讀取 ' + TS.total + ' 個幣、14 天資料　' + TS.loaded + ' / ' + TS.total : TS.scanning ? '正在掃描前 ' + S.coins.length + ' 大幣' : TS.lastScan ? '最後掃描 ' + fHM(TS.lastScan) + '　下次 ' + next + ' 秒後' : '準備掃描';
+    const status = !teamReady() ? '等行情連上才會開始工作' : TS.loading ? '時光機讀取 14 天資料 ' + TS.loaded + ' / ' + TS.total + '，同時照常掃描' : TS.scanning ? '正在掃描前 ' + S.coins.length + ' 大幣' : TS.lastScan ? '最後掃描 ' + fHM(TS.lastScan) + '　下次 ' + next + ' 秒後' : '準備掃描';
     const keys = TS.results ? Object.values(TS.results).sort((a, b) => a.grade.localeCompare(b.grade) || (b.mc ? b.mc.p50 : -99) - (a.mc ? a.mc.p50 : -99)) : [];
     const rk = todayRisk();
     const bd = teamBudget();
@@ -3621,11 +3672,14 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const avoid = (TS.rules || []).filter((r) => r.kind === 'avoid').slice(0, 6);
     const prefer = (TS.rules || []).filter((r) => r.kind === 'prefer').slice(0, 6);
     const accCell = (a) => (a.n ? '<b>' + Math.round(a.wr * 100) + '%</b><small>' + a.n + ' 筆　平均 ' + L.fmtR(a.avg) + '</small>' : '<b>—</b><small>還沒有紀錄</small>');
+    const ex = exploreState();
+    const exHTML = '<section><h3>' + (ex.on ? '試單期' : '學習進度') + '</h3>' + (ex.on ? '<div class="big">' + ex.done + '<small>／ ' + EXPLORE_N + ' 筆完成</small></div><div class="exbar"><i style="width:' + Math.round((ex.done / EXPLORE_N) * 100) + '%"></i></div><p class="say">團隊剛開始沒有自己的紀錄，所以先「亂槍打鳥」：看到訊號就用最小風險 0.25% 做，同時最多 ' + EXPLORE_OPEN + ' 筆。做滿 ' + EXPLORE_N + ' 筆後，改成只做自己判斷會賺的單，另外偶爾小量試單，繼續學。</p>' : '<p class="say">已經做完 ' + ex.done + ' 筆。現在只做預估會賺的單；沒把握的情況，偶爾用 0.25% 小量試，繼續累積經驗。</p>') + '</section>';
     return '<section style="margin-top:14px"><h3>市場總監</h3><div class="verdict ' + (rg ? (rg.dir === 'up' ? 'up' : rg.dir === 'down' ? 'down' : '') : '') + '">' + dirTxt + '</div><div class="sub">' + (rg ? '比特幣 1 小時線：4 項指標有 ' + votes + ' 項' + (rg.dir === 'flat' ? '同方向，方向不明確' : '同意') + '　24 小時 ' + fPct(rg.chg) + '　每小時波動約 ' + (rg.vol * 100).toFixed(2) + '%' : '讀取比特幣走勢中') + '</div><div class="sub status">' + esc(status) + (TS.err ? '　' + esc(TS.err) : '') + '</div></section>' +
       '<section><h3>團隊額度</h3><div class="quick big tq">' + [0, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="tpct" data-id="' + p + '" class="' + (tp === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(bd.eq * p) + '</small></button>').join('') + '</div>' +
       '<div class="sub" style="margin-top:10px">團隊最多動用你總資產的 ' + tp * 100 + '%（' + fU(bd.alloc) + ' USDT），已用 ' + fU(bd.used) + '。你委託的單用你自己的每筆金額，不佔額度。</div>' +
       '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做，網頁開著才會運作</span></span><i class="sw"></i></button></div></div>' +
       '<h3 style="margin-top:22px">團隊手上的單</h3>' + (tRows ? '<div class="list">' + tRows + '</div>' : '<div class="empty">目前沒有。</div>') + '</section>' +
+      exHTML +
       '<section><h3>資金控制</h3><div class="big">' + (sz.risk * 100).toFixed(2) + '%<small>下一筆的基本風險</small></div><div class="sub">約 ' + fU(bd.alloc * sz.risk) + ' USDT：停損打到時大約賠這麼多。' + esc(sz.notes.join('，')) + '。實際下單時再依這筆的把握度乘 0.7～1.3 倍。</div>' + riskSvg(J) + '</section>' +
       '<section><h3>判斷準確率</h3><div class="acc"><div><label>最近 20 筆</label>' + accCell(acc.recent) + '</div><div><label>再之前 20 筆</label>' + accCell(acc.before) + '</div><div><label>全部</label>' + accCell(acc.all) + '</div></div>' + (acc.recent.n && acc.before.n ? '<p class="say">' + (acc.recent.avg > acc.before.avg ? '最近比之前做得好，學到的守則有效。' : acc.recent.avg < acc.before.avg ? '最近比之前差，團隊會自動減碼，並繼續修正守則。' : '跟之前差不多。') + '</p>' : '') + '</section>' +
       '<section><h3>訊號獵人　前 ' + S.coins.length + ' 大幣</h3>' + (sigs.length ? '<div class="list">' + sigs.map(sigRow).join('') + '</div>' : '<div class="empty">目前沒有值得做的訊號。團隊每分鐘掃描一次' + (TS.cGrade ? '；另有 ' + TS.cGrade + ' 個訊號被團隊判斷為不值得做。' : '。') + '</div>') + '<div class="sub" style="margin-top:8px">右邊是團隊依照回測和自己的實戰紀錄，預估這筆平均能賺幾 R。大於 +0.10R 才會做。</div></section>' +
