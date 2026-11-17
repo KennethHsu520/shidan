@@ -436,6 +436,46 @@ small.glim { color: var(--muted); font-weight: 400; font-size: 11px; }
   .sidepane { grid-row: 1 / span 5; align-self: stretch; position: sticky; top: 0; max-height: calc(100vh - 110px); }
 }
 @media (min-width: 1024px) { #toast { position: fixed; top: auto; bottom: 28px; left: 0; right: 0; } }
+.coinpane { display: none; }
+@media (min-width: 1024px) {
+  #app { max-width: none; padding: 0 clamp(24px, 2.4vw, 56px); column-gap: clamp(28px, 2.4vw, 56px); }
+  main#view { padding-top: 0; }
+  main:not(.fixed) { padding-top: 12px; }
+  main:not(.fixed) > * { max-width: 1120px; }
+  main.fixed { overflow: hidden; display: block; padding: 0; }
+  .tv { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto auto minmax(0, 1fr) auto auto; column-gap: clamp(28px, 2.2vw, 48px); align-items: stretch; padding-top: 18px; }
+  .tv > .chartwrap { height: auto; min-height: 240px; }
+  .sidepane { position: static; max-height: none; grid-row: 1 / -1; align-self: stretch; padding: 0 0 20px clamp(24px, 2vw, 40px); }
+  .tv > .tbar { padding-bottom: 20px; }
+}
+@media (min-width: 1680px) {
+  .tv { grid-template-columns: 280px minmax(0, 1fr) 380px; }
+  .tv > .th, .tv > .tools, .tv > .chartwrap, .tv > .strip, .tv > .tbar { grid-column: 2; }
+  .sidepane { grid-column: 3; }
+  .coinpane { display: block; grid-column: 1; grid-row: 1 / -1; overflow-y: auto; min-height: 0; border-right: 1px solid var(--line); padding: 0 clamp(20px, 1.6vw, 32px) 20px 0; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .coinpane::-webkit-scrollbar { width: 6px; }
+  .coinpane::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .coinpane h3 { font-size: 12px; margin: 4px 0 8px; }
+  .coinpane .row.coin { padding: 10px 0; }
+  .coinpane .row.coin .sub { font-size: 11px; }
+  main:not(.fixed) > * { max-width: 1240px; }
+  .cols { columns: 3; column-gap: 56px; }
+  main:not(.fixed) > .cols { max-width: 1760px; }
+}
+@media (min-width: 1900px) {
+  .tv { grid-template-columns: 320px minmax(0, 1fr) 420px; }
+  .tv .th .thp b, .th .thp b { font-size: 40px; }
+  .row b, .row span { font-size: 15px; }
+  .sub { font-size: 13px; }
+  .sidepane .sub, .coinpane .sub { font-size: 12px; }
+  .say { font-size: 15px; }
+  h3 { font-size: 13px; }
+  .eqbox b { font-size: 22px; }
+  .tabs a { font-size: 15px; }
+}
+
+@media (min-width: 1440px) and (max-width: 1679px) { main:not(.fixed) > * { max-width: 1240px; } .cols { columns: 2; } }
+@media (min-width: 1900px) { main:not(.fixed) { zoom: 1.12; } }
 
 </style>
 </head>
@@ -3173,13 +3213,17 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   }
 
   const WIDE = window.matchMedia ? window.matchMedia('(min-width: 1024px)') : { matches: false, addEventListener() {} };
+  const XL = window.matchMedia ? window.matchMedia('(min-width: 1680px)') : { matches: false, addEventListener() {} };
+  const coinsBox = () => '<div class="sidebox"><h3>幣種　前 ' + S.coins.length + ' 大</h3><div id="sideHead">' + coinsHead() + '</div><div class="list side-coins">' + coinRows() + '</div></div>';
   function sideHTML() {
-    return '<div class="sidebox"><h3>持倉與掛單</h3>' + bookBody() + '</div><div class="sidebox"><h3>幣種</h3><div id="sideHead">' + coinsHead() + '</div><div class="list coins-list side-coins">' + coinRows() + '</div></div>';
+    return '<div class="sidebox"><h3>持倉與掛單</h3>' + bookBody() + '</div>' + (XL.matches ? '' : coinsBox());
   }
   function renderSide() {
     const el = $('#side');
     if (!el || !WIDE.matches) return;
     patch(el, sideHTML());
+    const cp = $('#cpane');
+    if (cp && XL.matches) patch(cp, coinsBox());
   }
   function viewTrade() {
     const sym = state.settings.sym;
@@ -3189,7 +3233,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       (state.rank >= 3 ? '<button class="chip' + (state.settings.ma ? ' on' : '') + '" data-act="ma">MA20</button>' : '') + '<button class="chip' + (state.settings.fib ? ' on' : '') + '" data-act="fib">0.618</button><span class="sp"></span></div>' +
       '<div class="chartwrap"><canvas id="chart" aria-label="' + esc(sym) + ' K 線圖"></canvas><div class="chartmsg" id="chartMsg">圖表載入中</div></div>' +
       '<div class="strip" id="strip"></div>' +
-      '<div class="tbar" id="bar"></div>' + (WIDE.matches ? '<aside class="sidepane" id="side"></aside>' : '') + '</div>';
+      '<div class="tbar" id="bar"></div>' + (WIDE.matches ? '<aside class="sidepane" id="side"></aside>' + (XL.matches ? '<aside class="coinpane" id="cpane"></aside>' : '') : '') + '</div>';
   }
   function stripHTML() {
     const pos = curPos().slice().sort((a, b) => (a.owner === 'team') - (b.owner === 'team'));
@@ -4503,6 +4547,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     $$('.tabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.dataset.v); }));
     $('#rankPill').addEventListener('click', () => go('learn'));
     if (WIDE.addEventListener) WIDE.addEventListener('change', () => { S.hover = null; render(); });
+    if (XL.addEventListener) XL.addEventListener('change', () => { S.hover = null; render(); });
     for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
     const h = (location.hash || '').slice(1);
     S.view = ['trade', 'team', 'learn', 'stats'].includes(h) ? h : 'trade';
