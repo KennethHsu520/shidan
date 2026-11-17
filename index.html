@@ -410,6 +410,32 @@ small.glim { color: var(--muted); font-weight: 400; font-size: 11px; }
   .cols > section { break-inside: avoid; display: inline-block; width: 100%; }
 }
 @media (min-width: 1024px) and (max-height: 700px) { .tv > .chartwrap { min-height: 260px; } }
+.dnote { margin: -2px 0 8px; font-size: 12px; }
+@media (min-width: 1024px) {
+  #app { max-width: 1680px; }
+  .tv { grid-template-columns: minmax(0, 1fr) 400px; }
+  .sidepane { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .sidepane::-webkit-scrollbar { width: 6px; }
+  .sidepane::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .sidepane h3 { font-size: 12px; margin: 18px 0 8px; }
+  .sidepane .sidebox:first-child h3 { margin-top: 4px; }
+  .sidepane .list .row { padding: 10px 0; }
+  .sidepane .row-main { align-items: center; gap: 12px; }
+  .sidepane .row-main > div:first-child { min-width: 0; }
+  .sidepane .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+  .sidepane .btn, .sidepane .btn.sm { min-height: 30px; padding: 4px 12px; font-size: 12px; border-radius: 8px; flex: none; }
+  .sidepane .row-actions { gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .sidepane .empty { padding: 12px 0; font-size: 13px; }
+  .sidepane .dnote { white-space: normal; }
+  .sidepane .sidebox + .sidebox { margin-top: 20px; }
+}
+@media (min-width: 1024px) {
+  main.fixed { overflow-y: auto; display: block; }
+  .tv { display: grid; height: auto; min-height: 0; grid-template-rows: auto auto auto auto auto; align-items: start; }
+  .tv > .chartwrap { height: clamp(320px, calc(100vh - 400px), 860px); min-height: 0; flex: none; }
+  .sidepane { grid-row: 1 / span 5; align-self: stretch; position: sticky; top: 0; max-height: calc(100vh - 110px); }
+}
+@media (min-width: 1024px) { #toast { position: fixed; top: auto; bottom: 28px; left: 0; right: 0; } }
 
 </style>
 </head>
@@ -3431,7 +3457,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         const r = posR(p, px);
         return '<div class="row"><div class="row-main"><div><b>' + esc(p.sym) + '</b>' + (p.owner === 'team' ? '<span class="tag who-t">團隊管</span>' : '') + '<span class="tag">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span><div class="sub">' + fQ(p.qty) + ' 顆　進場 ' + fP(p.entry) + '　打平 ' + fP(breakeven(p)) + '</div><div class="sub">' + (p.sl != null ? '停損 ' + fP(p.sl) : '未設停損') + '　' + (p.tp != null ? '停利 ' + fP(p.tp) : '未設停利') + (E.isLev(p) ? '　強平 ' + fP(p.liq) : '') + '</div></div><div class="right"><b class="' + cls(v) + '">' + fS(v) + '</b><div class="sub">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</div></div></div><div class="row-actions"><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button>' + (p.owner === 'team' ? '<button class="btn sm" data-act="takeover" data-id="' + p.id + '">改由我管</button>' : '') + (p.sym !== state.settings.sym ? '<button class="btn sm" data-act="sym" data-id="' + esc(p.sym) + '">看圖</button>' : '') + '</div></div>';
       }).join('') + '</div>' : '<div class="empty">沒有持倉。</div>') +
-      (TS.delegs.length ? '<h3 style="margin-top:22px">委託團隊</h3><div class="list">' + TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">' + delegTxt() + '　剩 ' + fLeft(d.until - Date.now()) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>').join('') + '</div>' : '') +
+      (TS.delegs.length ? '<h3 style="margin-top:22px">委託團隊　' + TS.delegs.length + ' 個</h3><div class="sub dnote">' + delegTxt() + '</div><div class="list">' + TS.delegs.map((d) => '<div class="row"><div class="row-main"><div><b>' + esc(d.sym) + '</b><span class="tag ' + (d.side === 'long' ? 'up' : 'down') + '">委託' + SIDE[d.side] + '</span><div class="sub">剩 ' + fLeft(d.until - Date.now()) + '</div></div><div class="right"><button class="btn sm" data-act="dcancel" data-id="' + esc(d.id) + '">取消</button></div></div></div>').join('') + '</div>' : '') +
       '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。點一下走勢圖就能掛單。</div>') +
       '';
   }
