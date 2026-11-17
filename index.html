@@ -366,12 +366,20 @@ small.glim { color: var(--muted); font-weight: 400; font-size: 11px; }
 .sub.src { font-size: 11px; color: var(--muted); }
 .sig .body .sub.down { color: var(--down); }
 
+.eqbox { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: 0; padding: 2px 8px; color: var(--ink); font: inherit; cursor: pointer; }
+.eqbox small { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.eqbox b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; line-height: 1.2; }
+.eqbox small.up { color: var(--up); }
+.eqbox small.down { color: var(--down); }
+@media (max-width: 380px) { #feedTxt { display: none; } .top-right { gap: 8px; } }
+
 </style>
 </head>
 <body>
 <div id="app">
   <header class="top">
     <div class="brand">搞錢</div>
+    <button class="eqbox" id="eqBox" type="button" data-act="book" aria-label="總資產，點開看持倉"><small>總資產 USDT</small><b id="eqVal">—</b><small id="eqSub"></small></button>
     <div class="top-right">
       <span class="feed" id="feed" data-m="connecting"><i></i><span id="feedTxt">連線中</span></span>
       <button class="pill" id="rankPill" type="button">段位 1 新手</button>
@@ -2944,7 +2952,21 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const ns = nextStep();
     return '<div class="strip-in idle"><button class="sl" data-act="book"><span>總資產 <b>' + fU(eq) + '</b></span><small>可用 ' + fU(state.cash) + (others ? '　持倉 ' + others : '') + (ords ? '　掛單 ' + ords : '') + (TS.delegs.length ? '　委託 ' + TS.delegs.length : '') + '</small></button>' + (ns ? '<button class="nx" data-act="' + (ns.lesson ? 'lesson' : 'go') + '" data-id="' + (ns.lesson || ns.go) + '"><small>' + esc(ns.small) + '</small><span>' + esc(ns.short || ns.text) + '</span></button>' : '') + '</div>';
   }
+  function hdrEq() {
+    const v = $('#eqVal');
+    if (!v) return;
+    const eq = E.equity(state, S.prices);
+    let un = 0;
+    for (const p of state.positions) un += E.posValue(p, S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry) - p.margin;
+    v.textContent = fU(eq);
+    const sub = $('#eqSub');
+    const t = '可用 ' + fU(state.cash) + (state.positions.length ? '　未實現 ' + fS(un) : '');
+    if (sub.textContent !== t) sub.textContent = t;
+    const c = state.positions.length ? cls(un) : '';
+    if (sub.dataset.c !== c) { sub.dataset.c = c; sub.className = c; }
+  }
   function tickUI() {
+    hdrEq();
     if (S.view === 'trade' && $('#px')) {
       const sym = state.settings.sym;
       $('#px').textContent = fP(S.prices[sym]);
@@ -3070,6 +3092,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     v.scrollTop = S.view === 'trade' ? 0 : top;
     $$('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.v === S.view));
     $('#rankPill').textContent = '段位 ' + state.rank + ' ' + E.RANKS[state.rank].name;
+    hdrEq();
     document.documentElement.dataset.tw = state.settings.twColors ? '1' : '0';
     setMode(S.mode, S.stale);
     if (S.view === 'trade') { bindChart(); renderBar(); tickUI(); drawChart(); }
