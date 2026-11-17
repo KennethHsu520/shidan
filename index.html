@@ -251,7 +251,7 @@ button.row.coin { display: flex; align-items: center; gap: 12px; }
 .coin .pr { text-align: right; display: flex; flex-direction: column; }
 .coin .pr small.up { color: var(--up); }
 .coin .pr small.down { color: var(--down); }
-.coin.on .nm b { color: var(--accent); }
+.coin.on .nm > b { color: var(--accent); }
 .chip.on { border-color: var(--ink); color: var(--ink); }
 .top { padding: calc(10px + env(safe-area-inset-top)) 16px 8px; }
 .tv .chartwrap { position: relative; overflow: hidden; }
@@ -315,6 +315,17 @@ button.row.sig { display: flex; align-items: center; gap: 12px; }
 .cmp-row b { text-align: right; font-weight: 600; }
 .cmp-row.head b { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.1em; }
 .tabs a { letter-spacing: 0.12em; }
+.hold { display: block; font-size: 12px; color: var(--ink2); margin-top: 3px; }
+.hold b { font-weight: 600; }
+.hold-side { font-weight: 600; margin-right: 6px; }
+.hold-side.up, .hold .up { color: var(--up); }
+.hold-side.down, .hold .down { color: var(--down); }
+button.row.coin.held { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10px; }
+#coinsHead { margin: 10px 0 2px; }
+.hold-sum { font-size: 13px; color: var(--ink2); }
+.hold-sum b { color: var(--ink); font-weight: 600; }
+.hold-sum b.up { color: var(--up); }
+.hold-sum b.down { color: var(--down); }
 
 </style>
 </head>
@@ -2656,14 +2667,45 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       (lines.length && !pick ? '<h3 style="margin-top:22px">檢討</h3><div class="lines" style="margin-top:0">' + lines.map((l) => '<p>' + esc(l) + '</p>').join('') + '</div>' : '') +
       '<div class="cta"><button class="btn ' + (pick ? 'quiet' : 'solid') + '" data-act="x">' + (pick ? '先不選' : fresh ? '知道了' : '關閉') + '</button></div>');
   }
+  function holdInfo(s) {
+    const P = state.positions.filter((p) => p.sym === s);
+    const O = state.orders.filter((o) => o.sym === s);
+    if (!P.length && !O.length) return '';
+    let pnl = 0, margin = 0;
+    const parts = [];
+    for (const p of P) {
+      const px = S.prices[s] > 0 ? S.prices[s] : p.entry;
+      pnl += E.posValue(p, px) - p.margin;
+      margin += p.margin;
+    }
+    if (P.length) {
+      const sides = Array.from(new Set(P.map((p) => (p.side === 'long' ? '買漲' : '買跌'))));
+      const qty = P.reduce((a, p) => a + p.qty, 0);
+      parts.push('<span class="hold-side ' + (P[0].side === 'long' ? 'up' : 'down') + '">' + sides.join('／') + '</span>' + fQ(qty) + ' 顆　<b class="' + cls(pnl) + '">' + fS(pnl) + '</b> <span class="' + cls(pnl) + '">' + fPct(pnl / margin) + '</span>');
+    }
+    if (O.length) parts.push('掛單 ' + O.length + ' 張');
+    return '<span class="hold">' + parts.join('　') + '</span>';
+  }
   function coinRows() {
+    const held = Array.from(new Set(state.positions.map((p) => p.sym).concat(state.orders.map((o) => o.sym))));
     const list = S.coins.slice();
-    if (!list.includes(state.settings.sym)) list.push(state.settings.sym);
-    return list.map((s) => '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small></span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>').join('');
+    for (const s of held.concat([state.settings.sym])) if (!list.includes(s)) list.push(s);
+    return list.map((s) => {
+      const h = holdInfo(s);
+      return '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + (h ? ' held' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small>' + h + '</span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>';
+    }).join('');
+  }
+  function coinsHead() {
+    const held = new Set(state.positions.map((p) => p.sym));
+    const ords = state.orders.length;
+    let pnl = 0;
+    for (const p of state.positions) pnl += E.posValue(p, S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry) - p.margin;
+    if (!held.size && !ords) return '<div class="sub">目前沒有持倉。</div>';
+    return '<div class="hold-sum">持倉中 <b>' + held.size + '</b> 個幣' + (ords ? '　掛單 <b>' + ords + '</b> 張' : '') + (held.size ? '　未實現 <b class="' + cls(pnl) + '">' + fS(pnl) + '</b>' : '') + '</div>';
   }
   function renderCoins(soft) {
-    if (soft) { patch($('.coins-list'), coinRows()); return; }
-    openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 10 名，排除穩定幣，每 30 分鐘更新') + '</div><div class="list coins-list">' + coinRows() + '</div><div class="cta"><button class="btn quiet" data-act="x">關閉</button></div>');
+    if (soft) { patch($('.coins-list'), coinRows()); patch($('#coinsHead'), coinsHead()); return; }
+    openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 10 名，排除穩定幣，每 30 分鐘更新') + '</div><div id="coinsHead">' + coinsHead() + '</div><div class="list coins-list">' + coinRows() + '</div><div class="cta"><button class="btn quiet" data-act="x">關閉</button></div>');
   }
   function renderBook(soft) {
     const P = state.positions, O = state.orders;
