@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src wss://data-stream.binance.vision https://data-api.binance.vision wss://stream.binance.com:9443 https://api.binance.com https://fapi.binance.com https://api.coingecko.com https://api.alternative.me https://api.github.com https://gist.githubusercontent.com https://cryptocurrency.cv https://free-crypto-news.vercel.app; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src wss://data-stream.binance.vision https://data-api.binance.vision wss://stream.binance.com:9443 https://api.binance.com https://fapi.binance.com https://api.coingecko.com https://api.alternative.me https://stablecoins.llama.fi https://api.github.com https://gist.githubusercontent.com https://cryptocurrency.cv https://free-crypto-news.vercel.app; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#F7F6F2">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -486,6 +486,9 @@ small.glim { color: var(--muted); font-weight: 400; font-size: 11px; }
 .nmeta .tag { margin: 0; }
 .ntitle { display: block; font-size: 14px; line-height: 1.5; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
 a.ntitle:hover { text-decoration: underline; text-underline-offset: 3px; }
+.lyr .row-main { align-items: flex-start; gap: 16px; }
+.lyr .row-main > span:first-child { white-space: nowrap; flex: none; }
+.lyr .row-main .sub { text-align: right; }
 
 </style>
 </head>
@@ -1737,10 +1740,15 @@ const TeamLearn = (() => {
     fund: { long: '多單擁擠（資金費率高）', short: '空單擁擠（資金費率負）', norm: '資金費率正常', na: '沒有資金費率資料' },
     oi: { upDown: '未平倉增加・價格下跌', upUp: '未平倉增加・價格上漲', down: '未平倉減少', flat: '未平倉持平', na: '沒有未平倉資料' },
     fg: { fear: '市場恐懼', neutral: '市場情緒中性', greed: '市場貪婪', na: '沒有恐懼貪婪資料' },
-    news: { good: '這個幣有好消息', bad: '這個幣有壞消息', mixed: '這個幣消息好壞都有', quiet: '這個幣最近沒新聞', na: '沒有新聞資料' },
-    mnews: { good: '市場新聞偏多', bad: '市場新聞偏空', neutral: '市場新聞中性', na: '沒有市場新聞資料' }
+    news: { priced: '好消息但已經漲過（不追）', good: '這個幣有好消息', bad: '這個幣有壞消息', mixed: '這個幣消息好壞都有', quiet: '這個幣最近沒新聞', na: '沒有新聞資料' },
+    mnews: { good: '市場新聞偏多', bad: '市場新聞偏空', neutral: '市場新聞中性', na: '沒有市場新聞資料' },
+    macro: { bull: '比特幣在 200 日均線上（長期偏多）', bear: '比特幣在 200 日均線下（長期偏空）', mid: '長期方向不明', na: '沒有長期均線資料' },
+    flow: { in: '穩定幣 30 天增加（資金進場）', out: '穩定幣 30 天減少（資金離場）', flat: '穩定幣 30 天持平', na: '沒有穩定幣資料' },
+    deriv: { crowd: '多頭擁擠（漲、未平倉增、費率高）', flush: '槓桿被洗掉（跌、未平倉減）', squeeze: '軋空機會（費率深度為負、不再破底）', cover: '空單回補（漲、未平倉減）', normal: '期貨市場正常', na: '沒有期貨資料' },
+    dom: { up: '比特幣市佔率上升（山寨偏弱）', down: '比特幣市佔率下降（山寨偏強）', flat: '比特幣市佔率持平', na: '沒有市佔率資料' }
   };
-  const NEG_EVENT = [['hack', /\bhack(ed|er|ers|s)?\b/i], ['hack', /\bexploit(ed|s)?\b/i], ['hack', /\bdrain(ed|s)?\b/i], ['hack', /\bstolen\b/i], ['hack', /\bbreach\b/i], ['rug', /\brug ?pull\b/i], ['delist', /\bdelist(ed|ing|s)?\b/i], ['sue', /\bsues?\b|\blawsuit\b|\bcharged\b|\bindict(ed|ment)\b/i], ['fraud', /\bfraud\b|\bponzi\b|\bscam\b/i], ['halt', /\bhalt(s|ed)? withdrawals?\b|\bsuspend(s|ed)? withdrawals?\b|\binsolven(t|cy)\b|\bbankrupt(cy)?\b/i]];
+  const EVWIN = { hack: 72, rug: 72, fraud: 72, halt: 72, delist: 168, sue: 24, depeg: 24 };
+  const NEG_EVENT = [['hack', /\bhack(ed|er|ers|s)?\b/i], ['hack', /\bexploit(ed|s)?\b/i], ['hack', /\bdrain(ed|s)?\b/i], ['hack', /\bstolen\b/i], ['hack', /\bbreach\b/i], ['rug', /\brug ?pull\b/i], ['delist', /\bdelist(ed|ing|s)?\b/i], ['sue', /\bsues?\b|\blawsuit\b|\bcharged\b|\bindict(ed|ment)\b/i], ['fraud', /\bfraud\b|\bponzi\b|\bscam\b/i], ['halt', /\bhalt(s|ed)? withdrawals?\b|\bsuspend(s|ed)? withdrawals?\b|\binsolven(t|cy)\b|\bbankrupt(cy)?\b/i], ['depeg', /\bde-?peg(s|ged)?\b|\blos(es|t) (its )?peg\b/i]];
   const NEG = /\b(crash(es|ed)?|plunge[sd]?|plummet(s|ed)?|tumble[sd]?|sell-?off|dump(s|ed)?|bearish|outflows?|liquidat(ed|ions?)|ban(s|ned)?|crackdown|slump(s|ed)?|sink(s)?|sank|fears?|warns?|downturn|losses)\b/i;
   const POS = /\b(surge[sd]?|soar(s|ed)?|rall(y|ies|ied)|jump(s|ed)?|bullish|inflows?|record high|all-time high|ath|approv(al|es|ed)|partnership|partners with|adopt(s|ion|ed)|launch(es|ed)?|list(s|ed|ing) on|upgrade[sd]?|integrat(es|ion|ed)|accumulat(es|ion|ed)|buys?|gains?|breakout|reserve)\b/i;
   function newsScore(title, desc, sentiment) {
@@ -1795,7 +1803,8 @@ const TeamLearn = (() => {
     const m = items.filter((a) => !a.dup && a.t <= t && a.t > t - 3 * 3600000);
     let mnews = 'neutral';
     if (m.length >= 5) { const ws = m.reduce((x, a) => x + newsW(a, t), 0); const avg = m.reduce((x, a) => x + a.s * newsW(a, t), 0) / ws; mnews = avg > 0.15 ? 'good' : avg < -0.15 ? 'bad' : 'neutral'; }
-    const ev = mine.find((a) => a.ev && t - a.t < 6 * 3600000) || null;
+    const evs = items.filter((a) => !a.dup && a.ev && a.t <= t && a.syms.includes(sym) && t - a.t < (EVWIN[a.ev] || 6) * 3600000).sort((a, b) => b.t - a.t);
+    const ev = evs[0] || null;
     return { news, mnews, ev, n: mine.length, mn: m.length };
   }
   const W_LIVE = 3;
@@ -1837,6 +1846,16 @@ const TeamLearn = (() => {
     return 'flat';
   }
 
+  function derivState(fund, oiChg, pxChg, ind, i) {
+    if (fund == null || oiChg == null || pxChg == null) return 'na';
+    let low = Infinity;
+    for (let j = Math.max(0, i - 48); j < i - 6; j++) low = Math.min(low, ind.c[j]);
+    if (pxChg > 0.01 && oiChg > 0.03 && fund >= 0.0003) return 'crowd';
+    if (fund <= -0.0003 && isFinite(low) && ind.c[i] > low) return 'squeeze';
+    if (pxChg < -0.01 && oiChg < -0.03) return 'flush';
+    if (pxChg > 0.01 && oiChg < -0.03) return 'cover';
+    return 'normal';
+  }
   function features(ind, k, i, side, dir, volx, ext) {
     const r = ind.rsi[i];
     const vx = volx != null ? volx : ind.vavg[i] > 0 ? k[i].v / ind.vavg[i] : 1;
@@ -1854,8 +1873,12 @@ const TeamLearn = (() => {
       fund: x.fund == null ? 'na' : x.fund >= 0.0003 ? 'long' : x.fund <= -0.0001 ? 'short' : 'norm',
       oi: x.oiChg == null || pxChg == null ? 'na' : x.oiChg > 0.03 ? (pxChg < 0 ? 'upDown' : 'upUp') : x.oiChg < -0.03 ? 'down' : 'flat',
       fg: x.fg == null ? 'na' : x.fg < 35 ? 'fear' : x.fg > 65 ? 'greed' : 'neutral',
-      news: x.news || 'na',
-      mnews: x.mnews || 'na'
+      news: x.news === 'good' && pxChg != null && pxChg > 0.08 ? 'priced' : x.news || 'na',
+      mnews: x.mnews || 'na',
+      macro: x.macro || 'na',
+      flow: x.flow || 'na',
+      deriv: derivState(x.fund, x.oiChg, pxChg, ind, i),
+      dom: x.dom || 'na'
     };
   }
 
@@ -2012,7 +2035,7 @@ const TeamLearn = (() => {
     }
     return { n, hit, rate: n ? hit / n : null };
   }
-  return { newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, accuracy, fmtR };
+  return { EVWIN, derivState, newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, accuracy, fmtR };
 })();
 if (typeof module !== 'undefined') module.exports.Learn = TeamLearn;
 
@@ -3840,8 +3863,42 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     while (lo <= hi) { const m = (lo + hi) >> 1; if (arr[m].t <= t) { ans = m; lo = m + 1; } else hi = m - 1; }
     return ans;
   };
+  const sma = (arr, n, i) => { if (i < n - 1) return null; let s = 0; for (let j = i - n + 1; j <= i; j++) s += arr[j].c; return s / n; };
+  function structAt(t) {
+    const D = MD.btcD;
+    if (!D) return null;
+    const i = lastAt(D, t - 86400000);
+    if (i < 200) return null;
+    const px = D[i].c, m200 = sma(D, 200, i), m50 = sma(D, 50, i);
+    let w200 = null;
+    if (MD.btcW) { const j = lastAt(MD.btcW, t - 7 * 86400000); if (j >= 199) w200 = sma(MD.btcW, 200, j); }
+    const macro = px > m200 && m50 > m200 ? 'bull' : px < m200 ? 'bear' : 'mid';
+    return { macro, px, m200, m50, w200 };
+  }
+  function flowAt(t) {
+    const A = MD.stable;
+    if (!A || !A.length) return null;
+    const i = lastAt(A, t), j = lastAt(A, t - 30 * 86400000);
+    if (i < 0 || j < 0 || t - A[i].t > 3 * 86400000) return null;
+    const chg = A[i].v / A[j].v - 1;
+    return { flow: chg > 0.01 ? 'in' : chg < -0.01 ? 'out' : 'flat', chg, v: A[i].v };
+  }
+  function domNow() {
+    const d = MD.dom;
+    if (!d || !d.hist || d.hist.length < 2) return null;
+    const h = d.hist;
+    const ref = h.find((x) => x.t <= Date.now() - 20 * 3600000) || null;
+    if (!ref) return { dom: null, now: d.now };
+    const ch = d.now - ref.v;
+    return { dom: ch > 0.3 ? 'up' : ch < -0.3 ? 'down' : 'flat', now: d.now, ch };
+  }
   function extAt(sym, t, live) {
     const out = {};
+    const st = structAt(t);
+    if (st) out.macro = st.macro;
+    const fl = flowAt(t);
+    if (fl) out.flow = fl.flow;
+    if (live && sym !== 'BTC') { const dm = domNow(); if (dm && dm.dom) out.dom = dm.dom; }
     const F = MD.fund[sym];
     if (F && F.length) { const i = lastAt(F, t); if (i >= 0 && t - F[i].t < 9 * 3600000) out.fund = F[i].v; }
     if (out.fund == null && MD.fundNow[sym] != null && Math.abs(Date.now() - t) < 9 * 3600000) out.fund = MD.fundNow[sym];
@@ -3900,6 +3957,29 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         } catch (e) { MD.oi[c] = MD.oi[c] || null; }
       });
       MD.ok.oi = okO > 0;
+      try {
+        const d = await fetchKlines('BTC', '1d', '&limit=400');
+        if (d.length > 210) MD.btcD = d;
+        const w = await fetchKlines('BTC', '1w', '&limit=230');
+        if (w.length > 200) MD.btcW = w;
+      } catch (e) { MD.btcD = MD.btcD || null; }
+      try {
+        const r = await getAbs('https://stablecoins.llama.fi/stablecoincharts/all', 12000);
+        if (Array.isArray(r)) MD.stable = r.map((x) => ({ t: +x.date * 1000, v: x && x.totalCirculatingUSD ? +x.totalCirculatingUSD.peggedUSD : NaN })).filter((x) => x.t > 0 && x.v > 0).sort((a, b) => a.t - b.t).slice(-200);
+        MD.ok.stable = !!(MD.stable && MD.stable.length > 40);
+      } catch (e) { MD.ok.stable = false; }
+      try {
+        const g = await getAbs('https://api.coingecko.com/api/v3/global', 8000);
+        const v = g && g.data && g.data.market_cap_percentage ? +g.data.market_cap_percentage.btc : NaN;
+        if (v > 0 && v < 100) {
+          let h = [];
+          try { h = JSON.parse(localStorage.getItem('gaoqian.dom')) || []; } catch (e) { h = []; }
+          h = (Array.isArray(h) ? h : []).filter((x) => x && x.t > Date.now() - 8 * 86400000 && x.v > 0);
+          if (!h.length || Date.now() - h[h.length - 1].t > 3000000) h.push({ t: Date.now(), v });
+          try { localStorage.setItem('gaoqian.dom', JSON.stringify(h)); } catch (e) { h = h.slice(-50); }
+          MD.dom = { now: v, hist: h };
+        }
+      } catch (e) { MD.dom = MD.dom || null; }
       MD.t = Date.now();
     } finally { MD.loading = false; }
   }
@@ -3952,7 +4032,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         for (const c of Object.keys(a.p0)) if (S.prices[c] > 0 && a.p0[c] > 0) a.chk[c] = S.prices[c] / a.p0[c] - 1;
       }
       const cut = Date.now() - 48 * 3600000;
-      NW.items = Array.from(have.values()).filter((a) => a.t > cut).sort((a, b) => a.t - b.t).slice(-400);
+      NW.items = Array.from(have.values()).filter((a) => a.t > cut || (a.ev && !a.dup && a.t > Date.now() - 7 * 86400000)).sort((a, b) => a.t - b.t).slice(-450);
       if (!NW.start || NW.start < cut) NW.start = NW.items.length ? Math.max(cut, Math.min(NW.start || Date.now(), NW.items[0].t)) : Date.now();
       NW.hist = NW.hist || { n: 0, hit: 0 };
       for (const a of have.values()) if (a.chk && !a.counted && a.t <= cut + 3600000) { const h = L.newsHits([a]); NW.hist.n += h.n; NW.hist.hit += h.hit; a.counted = true; }
@@ -3964,6 +4044,52 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (!NW.items || !NW.items.length || !NW.start) return null;
     if (Math.abs(Date.now() - t) > 600000 && t < NW.start + 3600000) return null;
     return L.newsMood(NW.items, sym, t);
+  }
+  const MACRO_CAL = [
+    { t: Date.UTC(2026, 10, 18, 19, 0), name: 'FOMC 會議紀要' },
+    { t: Date.UTC(2026, 10, 25, 13, 30), name: '美國 PCE 物價' },
+    { t: Date.UTC(2026, 11, 9, 19, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2026, 11, 10, 13, 30), name: '美國 11 月 CPI' }
+  ];
+  const CAL_UNTIL = Date.UTC(2026, 11, 11);
+  function macroWindow(t) { return MACRO_CAL.find((e) => t >= e.t - 30 * 60000 && t <= e.t + 60 * 60000) || null; }
+  function nextMacro(t) { return MACRO_CAL.find((e) => e.t + 60 * 60000 > t) || null; }
+  const TRUSTED = /coindesk|the ?block|decrypt|cointelegraph|reuters|bloomberg|cnbc|blockworks|wsj|financial times|ft\.com|theblock/i;
+  function layers(side, t) {
+    const st = structAt(t), fl = flowAt(t), rg = TS.regime;
+    const L3 = [
+      { k: '結構層', v: st ? st.macro : null, against: st ? (side === 'long' ? st.macro === 'bear' : st.macro === 'bull') : false },
+      { k: '資金層', v: fl ? fl.flow : null, against: fl ? (side === 'long' ? fl.flow === 'out' : fl.flow === 'in') : false },
+      { k: '觸發層', v: rg ? rg.dir : null, against: rg ? (side === 'long' ? rg.dir === 'down' : rg.dir === 'up') : false }
+    ];
+    return { L3, against: L3.filter((x) => x.against).length, known: L3.filter((x) => x.v).length };
+  }
+  function brainCheck(sig) {
+    const t = nowT();
+    const f = sig.f || {};
+    const long = sig.side === 'long';
+    const notes = [];
+    let mult = 1;
+    const mw = macroWindow(t);
+    if (mw) return { block: '重大數據「' + mw.name + '」公布前後，暫停進場', mult, notes };
+    const nev = long ? newsAt(sig.sym, t) : null;
+    if (nev && nev.ev) {
+      const sure = (nev.ev.copies || 0) >= 1 || TRUSTED.test(nev.ev.src || '');
+      if (sure) return { block: '新聞有重大壞消息（' + NEWS_EV[nev.ev.ev] + '，' + fAgo(t - nev.ev.t) + '），先不買漲', mult, notes };
+      mult *= 0.5; notes.push('有' + NEWS_EV[nev.ev.ev] + '傳聞但只有一家報導，半量');
+    }
+    const ly = layers(sig.side, t);
+    if (ly.known === 3 && ly.against === 3) return { block: '結構、資金、觸發三層都跟這個方向相反', mult, notes };
+    if (ly.against >= 2) { mult *= 0.5; notes.push('三層裡有 ' + ly.against + ' 層方向相反，半量'); }
+    const fgv = MD.fg.length ? MD.fg[MD.fg.length - 1].v : null;
+    if (long && fgv != null && fgv >= 75 && sig.type === 'breakout') return { block: '市場極度貪婪，不追高突破', mult, notes };
+    if (!long && fgv != null && fgv <= 20) { mult *= 0.5; notes.push('極度恐懼時追空容易被軋，半量'); }
+    if (long && f.news === 'priced' && (sig.type === 'breakout' || sig.type === 'grail')) return { block: '好消息已經漲過，不追', mult, notes };
+    if (long && f.deriv === 'crowd') { mult *= 0.5; notes.push('多頭擁擠，提防回檔清算，半量'); }
+    if (!long && f.deriv === 'squeeze') { mult *= 0.5; notes.push('軋空風險高，半量'); }
+    if (ly.against === 1) { mult *= 0.75; notes.push(ly.L3.find((x) => x.against).k + '方向相反，減碼'); }
+    if (long && sig.sym !== 'BTC' && f.dom === 'up') { mult *= 0.75; notes.push('比特幣市佔率上升，山寨買漲減碼'); }
+    return { block: null, mult: Math.max(0.25, mult), notes };
   }
   const RISK = { day: 0.03, week: 0.05, halt: 0.15, open: 0.05, side: 0.03, streak: 4, cool: 3600000, shock: 0.015 };
   function riskOf(p) {
@@ -4361,8 +4487,8 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (state.settings.teamPct <= 0 || b.room < E.MIN_AMOUNT) return false;
       const g = guard();
       if (g.block) { sig.block = g.block; return false; }
-      const nev = sig.side === 'long' ? newsAt(sig.sym, nowT()) : null;
-      if (nev && nev.ev) { sig.block = '新聞有重大壞消息（' + NEWS_EV[nev.ev.ev] + '，' + fAgo(nowT() - nev.ev.t) + '），先不買漲'; return false; }
+      const bc = brainCheck(sig);
+      if (bc.block) { sig.block = bc.block; return false; }
       if (sig.sym !== 'BTC' && g.btc > RISK.shock) { sig.block = '比特幣 15 分鐘內動了 ' + (g.btc * 100).toFixed(1) + '%，小幣先不進場'; return false; }
       if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
       else {
@@ -4370,6 +4496,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
         risk = sz.risk; notes = sz.notes;
       }
       if (g.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * g.mult); notes = notes.concat(g.notes); }
+      if (bc.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * bc.mult); notes = notes.concat(bc.notes); }
       const add = b.alloc * risk;
       if (g.open + add > RISK.open * b.alloc + 1e-9) { sig.block = '團隊同時承擔的風險已到額度的 5%'; return false; }
       if (g.side[sig.side] + add > RISK.side * b.alloc + 1e-9) { sig.block = '同方向（' + SIDE[sig.side] + '）的風險已到額度的 3%，幣跟幣會一起漲跌'; return false; }
@@ -4615,7 +4742,12 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       ['Ed Seykota', '大趨勢第一、小賭注、照規則做、不看新聞'],
       ['Linda Raschke', '聖杯：強趨勢裡第一次拉回 20 均線'],
       ['Van Tharp', '每筆用 R 計算，只看平均每筆賺幾 R'],
-      ['加密貨幣專屬', '資金費率、未平倉量、恐懼貪婪指數、比特幣急動時小幣暫停、週末半量']
+      ['加密貨幣專屬', '資金費率、未平倉量、恐懼貪婪指數、比特幣急動時小幣暫停、週末半量'],
+      ['你的知識庫：三層判斷', '結構層（200 日、200 週均線）定方向，資金層（穩定幣）確認，觸發層（1 小時線、資金費率、未平倉）抓時機'],
+      ['你的知識庫：總經', 'CPI、PCE、FOMC 公布前 30 分鐘到後 1 小時不進場'],
+      ['你的知識庫：衍生品', '漲＋未平倉增＋費率高＝多頭擁擠；費率深度為負且不再破底＝軋空；漲但未平倉減＝空單回補'],
+      ['你的知識庫：新聞', '駭客、詐騙、停止提款 3 天不買漲；下架 7 天；只有一家報導先減半；好消息已漲過不追；極度貪婪不追突破'],
+      ['你的知識庫：山寨', '比特幣市佔率上升時山寨買漲減碼']
     ].map((x) => '<div class="row"><div class="row-main"><div><b>' + x[0] + '</b><div class="sub">' + x[1] + '</div></div></div></div>').join('') + '</div><p class="say">防守規則一定遵守；其他條件都交給團隊自己學：在加密貨幣有效就變成偏好，沒效就變成避開。</p></section>';
     const fgNow = MD.fg.length ? MD.fg[MD.fg.length - 1].v : null;
     const fgTxt = fgNow == null ? '' : '恐懼貪婪 ' + fgNow + '（' + (fgNow < 25 ? '極度恐懼' : fgNow < 45 ? '恐懼' : fgNow <= 55 ? '中性' : fgNow <= 75 ? '貪婪' : '極度貪婪') + '）';
@@ -4623,6 +4755,22 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const nmk = NW.items && NW.items.length ? L.newsMood(NW.items, '-', Date.now()) : null;
     const nwTxt = nmk ? '新聞 ' + ({ good: '偏多', bad: '偏空', neutral: '中性' }[nmk.mnews]) + '（3 小時 ' + nmk.mn + ' 則）' : '';
     const moodHTML = fgTxt || frTxt || nwTxt ? '<div class="sub">' + [fgTxt, frTxt, nwTxt].filter(Boolean).join('　') + '</div><div class="sub src">資料來源：' + [fgTxt ? 'alternative.me' : '', frTxt ? '幣安期貨' : '', nwTxt ? (NW.src || 'cryptocurrency.cv') : ''].filter(Boolean).join('、') + '</div>' : S.mode === 'live' && MD.t ? '<div class="sub src">市場情緒資料暫時讀不到，團隊只用 K 線判斷</div>' : '';
+    const now0 = Date.now();
+    const st0 = structAt(now0), fl0 = flowAt(now0), dm0 = domNow();
+    const lyL = layers('long', now0);
+    const stTxt = st0 ? (st0.macro === 'bull' ? '偏多' : st0.macro === 'bear' ? '偏空' : '不明') + '　比特幣 ' + fP(st0.px) + '／200 日 ' + fP(st0.m200) + (st0.w200 ? '／200 週 ' + fP(st0.w200) : '') : '讀取中';
+    const flTxt = fl0 ? (fl0.flow === 'in' ? '資金進場' : fl0.flow === 'out' ? '資金離場' : '持平') + '　穩定幣 30 天 ' + fPct(fl0.chg) + '（$' + (fl0.v / 1e9).toFixed(1) + 'B）' : '讀取中';
+    const tgTxt = TS.regime ? (TS.regime.dir === 'up' ? '偏多' : TS.regime.dir === 'down' ? '偏空' : '盤整') + '　比特幣 1 小時線' : '讀取中';
+    const verdict = lyL.known < 2 ? '資料不足' : lyL.against === 3 ? '三層都偏空：不買漲' : lyL.against === 2 ? '大方向偏空：買漲減半' : lyL.against === 1 ? '有一層相反：降低把握度' : lyL.known === 3 ? '三層一致偏多' : '目前沒有相反的訊號';
+    const nm0 = nextMacro(now0);
+    const mw0 = macroWindow(now0);
+    const calTxt = mw0 ? '<b class="down">「' + esc(mw0.name) + '」公布前後，團隊暫停進場</b>' : nm0 ? '下一個重大數據：' + esc(nm0.name) + '　' + fT(nm0.t) + '（前 30 分鐘到後 1 小時暫停進場）' : (now0 > CAL_UNTIL ? '數據日曆已過期，需要更新' : '');
+    const layersHTML = '<section><h3>三層判斷　大方向</h3><div class="verdict" style="font-size:20px">' + esc(verdict) + '</div><div class="list lyr" style="margin-top:10px">' +
+      '<div class="row"><div class="row-main"><span>結構層</span><span class="sub">' + esc(stTxt) + '</span></div></div>' +
+      '<div class="row"><div class="row-main"><span>資金層</span><span class="sub">' + esc(flTxt) + '</span></div></div>' +
+      '<div class="row"><div class="row-main"><span>觸發層</span><span class="sub">' + esc(tgTxt) + '</span></div></div>' +
+      (dm0 ? '<div class="row"><div class="row-main"><span>比特幣市佔率</span><span class="sub">' + dm0.now.toFixed(1) + '%' + (dm0.dom ? '　' + ({ up: '上升，山寨偏弱', down: '下降，山寨偏強', flat: '持平' }[dm0.dom]) : '　累積中') + '</span></div></div>' : '') +
+      '</div><p class="say">' + calTxt + '</p><p class="say">結構層決定大方向、資金層確認、觸發層決定時機。三層都相反就不做；兩層相反減半；一層相反減碼四分之一。資料來源：幣安、DefiLlama、CoinGecko</p></section>';
     const ex = exploreState();
     const exHTML = '<section><h3>' + (ex.on ? '試單期' : '學習進度') + '</h3>' + (ex.on ? '<div class="big">' + ex.done + '<small>／ ' + EXPLORE_N + ' 筆完成</small></div><div class="exbar"><i style="width:' + Math.round((ex.done / EXPLORE_N) * 100) + '%"></i></div><p class="say">團隊剛開始沒有自己的紀錄，所以先「亂槍打鳥」：看到訊號就用最小風險 0.25% 做，同時最多 ' + EXPLORE_OPEN + ' 筆。做滿 ' + EXPLORE_N + ' 筆後，改成只做自己判斷會賺的單，另外偶爾小量試單，繼續學。</p>' : '<p class="say">已經做完 ' + ex.done + ' 筆。現在只做預估會賺的單；沒把握的情況，偶爾用 0.25% 小量試，繼續累積經驗。</p>') + '</section>';
     return '<div class="cols"><section style="margin-top:14px"><h3>市場總監</h3><div class="verdict ' + (rg ? (rg.dir === 'up' ? 'up' : rg.dir === 'down' ? 'down' : '') : '') + '">' + dirTxt + '</div><div class="sub">' + (rg ? '比特幣 1 小時線：4 項指標有 ' + votes + ' 項' + (rg.dir === 'flat' ? '同方向，方向不明確' : '同意') + '　24 小時 ' + fPct(rg.chg) + '　每小時波動約 ' + (rg.vol * 100).toFixed(2) + '%' : '讀取比特幣走勢中') + '</div>' + moodHTML + '<div class="sub status">' + esc(status) + (TS.err ? '　' + esc(TS.err) : '') + '</div></section>' +
@@ -4630,7 +4778,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       '<div class="sub" style="margin-top:10px">團隊最多動用你總資產的 ' + tp * 100 + '%（' + fU(bd.alloc) + ' USDT），已用 ' + fU(bd.used) + '。你委託的單用你自己的每筆金額，不佔額度。</div>' +
       '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做，網頁開著才會運作</span></span><i class="sw"></i></button></div></div>' +
       '<h3 style="margin-top:22px">團隊手上的單</h3>' + (tRows ? '<div class="list">' + tRows + '</div>' : '<div class="empty">目前沒有。</div>') + '</section>' +
-      exHTML + guardHTML + newsHTML() +
+      layersHTML + exHTML + guardHTML + newsHTML() +
       '<section><h3>資金控制</h3><div class="big">' + (sz.risk * 100).toFixed(2) + '%<small>下一筆的基本風險</small></div><div class="sub">約 ' + fU(bd.alloc * sz.risk) + ' USDT：停損打到時大約賠這麼多。' + esc(sz.notes.join('，')) + '。實際下單時再依這筆的把握度乘 0.7～1.3 倍。</div>' + riskSvg(J) + '</section>' +
       '<section><h3>判斷準確率</h3><div class="acc"><div><label>最近 20 筆</label>' + accCell(acc.recent) + '</div><div><label>再之前 20 筆</label>' + accCell(acc.before) + '</div><div><label>全部</label>' + accCell(acc.all) + '</div></div>' + (acc.recent.n && acc.before.n ? '<p class="say">' + (acc.recent.avg > acc.before.avg ? '最近比之前做得好，學到的守則有效。' : acc.recent.avg < acc.before.avg ? '最近比之前差，團隊會自動減碼，並繼續修正守則。' : '跟之前差不多。') + '</p>' : '') + '</section>' +
       '<section><h3>訊號獵人　前 ' + S.coins.length + ' 大幣</h3>' + (sigs.length ? '<div class="list">' + sigs.map(sigRow).join('') + '</div>' : '<div class="empty">目前沒有值得做的訊號。團隊每分鐘掃描一次' + (TS.cGrade ? '；另有 ' + TS.cGrade + ' 個訊號被團隊判斷為不值得做。' : '。') + '</div>') + '<div class="sub" style="margin-top:8px">右邊是團隊依照回測和自己的實戰紀錄，預估這筆平均能賺幾 R。大於 +0.10R 才會做。</div></section>' +
