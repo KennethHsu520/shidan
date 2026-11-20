@@ -488,6 +488,9 @@ small.glim { color: var(--muted); font-weight: 400; font-size: 11px; }
 .ntitle { display: block; font-size: 14px; line-height: 1.5; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
 a.ntitle:hover { text-decoration: underline; text-underline-offset: 3px; }
 .lyr .row-main { align-items: flex-start; gap: 16px; }
+.tasc { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tasc b { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.tasc:not(.on) { opacity: .72; }
 .lyr .row-main > span:first-child { white-space: nowrap; flex: none; }
 .lyr .row-main .sub { text-align: right; }
 
@@ -1714,9 +1717,27 @@ const Team = (() => {
     for (let b = Math.max(1, back || 1); b >= 1; b--) {
       const i = k.length - 1 - b;
       if (i < 60) continue;
-      for (const s of detect(ind, k, i)) out.push(Object.assign(s, { plan: plan(ind, k, i, s.side, s.stopRef), barT: k[i].t, rsi: ind.rsi[i], f: typeof TeamLearn !== 'undefined' ? TeamLearn.features(ind, k, i, s.side, dir, s.volx, extFn ? extFn(k[i].t) : null) : null }));
+      for (const s of detect(ind, k, i)) { const pl = plan(ind, k, i, s.side, s.stopRef); out.push(Object.assign(s, { plan: pl, barT: k[i].t, rsi: ind.rsi[i], f: typeof TeamLearn !== 'undefined' ? TeamLearn.features(ind, k, i, s.side, dir, s.volx, extFn ? extFn(k[i].t) : null, pl) : null })); }
     }
     return out;
+  }
+
+  function roomR(k, i, side, dist) {
+    if (!(dist > 0) || i < 20) return null;
+    const long = side === 'long';
+    const px = k[i].c;
+    const W = 6;
+    let best = null;
+    for (let j = Math.max(W, i - 288); j <= i - W; j++) {
+      const v = long ? k[j].h : k[j].l;
+      if (long ? v <= px : v >= px) continue;
+      let piv = true;
+      for (let q = j - W; q <= j + W && piv; q++) if (q !== j && (long ? k[q].h > v : k[q].l < v)) piv = false;
+      if (!piv) continue;
+      const d = Math.abs(v - px);
+      if (best == null || d < best) best = d;
+    }
+    return best == null ? Infinity : best / dist;
   }
 
   function riskSize(eq, cash, p, riskPct, capPct) {
@@ -1726,7 +1747,7 @@ const Team = (() => {
     return Math.floor(amt * 100) / 100;
   }
 
-  return { TREND, TGT, BE_R, TRAIL_R, TRAIL_N, beStop, trailStop, adx, swing, fibLevels, fibAt, TYPES, KEYS, HOLD, FEE, rng, ema, rsi, atr, prepare, detect, plan, simulate, backtest, stats, monteCarlo, grade, evaluate, ratios, replay, regime, latest, riskSize, rCost };
+  return { TREND, TGT, BE_R, TRAIL_R, TRAIL_N, beStop, trailStop, adx, swing, fibLevels, fibAt, TYPES, KEYS, HOLD, FEE, rng, ema, rsi, atr, prepare, detect, plan, simulate, backtest, stats, monteCarlo, grade, evaluate, ratios, replay, regime, latest, riskSize, rCost, roomR };
 })();
 if (typeof module !== 'undefined') module.exports = Team;
 const TeamLearn = (() => {
@@ -1747,7 +1768,8 @@ const TeamLearn = (() => {
     flow: { in: '穩定幣 30 天增加（資金進場）', out: '穩定幣 30 天減少（資金離場）', flat: '穩定幣 30 天持平', na: '沒有穩定幣資料' },
     deriv: { crowd: '多頭擁擠（漲、未平倉增、費率高）', flush: '槓桿被洗掉（跌、未平倉減）', squeeze: '軋空機會（費率深度為負、不再破底）', cover: '空單回補（漲、未平倉減）', normal: '期貨市場正常', na: '沒有期貨資料' },
     dom: { up: '比特幣市佔率上升（山寨偏弱）', down: '比特幣市佔率下降（山寨偏強）', flat: '比特幣市佔率持平', na: '沒有市佔率資料' },
-    sect: { with: '順板塊強弱（強勢板塊買漲、弱勢板塊買跌）', against: '逆板塊強弱', mid: '板塊強弱普通', na: '沒有板塊資料' }
+    sect: { with: '順板塊強弱（強勢板塊買漲、弱勢板塊買跌）', against: '逆板塊強弱', mid: '板塊強弱普通', na: '沒有板塊資料' },
+    room: { tight: '前方 1R 內就有擋路的高低點（空間小）', mid: '離前方高低點 1～2.5R', open: '前方 2.5R 內沒有擋路的高低點', na: '沒有空間資料' }
   };
   const EVWIN = { hack: 72, rug: 72, fraud: 72, halt: 72, delist: 168, sue: 24, depeg: 24 };
   const NEG_EVENT = [['hack', /\bhack(ed|er|ers|s)?\b/i], ['hack', /\bexploit(ed|s)?\b/i], ['hack', /\bdrain(ed|s)?\b/i], ['hack', /\bstolen\b/i], ['hack', /\bbreach\b/i], ['rug', /\brug ?pull\b/i], ['delist', /\bdelist(ed|ing|s)?\b/i], ['sue', /\bsues?\b|\blawsuit\b|\bcharged\b|\bindict(ed|ment)\b/i], ['fraud', /\bfraud\b|\bponzi\b|\bscam\b/i], ['halt', /\bhalt(s|ed)? withdrawals?\b|\bsuspend(s|ed)? withdrawals?\b|\binsolven(t|cy)\b|\bbankrupt(cy)?\b/i], ['depeg', /\bde-?peg(s|ged)?\b|\blos(es|t) (its )?peg\b/i]];
@@ -1858,7 +1880,7 @@ const TeamLearn = (() => {
     if (pxChg > 0.01 && oiChg < -0.03) return 'cover';
     return 'normal';
   }
-  function features(ind, k, i, side, dir, volx, ext) {
+  function features(ind, k, i, side, dir, volx, ext, p) {
     const r = ind.rsi[i];
     const vx = volx != null ? volx : ind.vavg[i] > 0 ? k[i].v / ind.vavg[i] : 1;
     const ax = ind.adx ? ind.adx[i] : null;
@@ -1881,7 +1903,8 @@ const TeamLearn = (() => {
       flow: x.flow || 'na',
       deriv: derivState(x.fund, x.oiChg, pxChg, ind, i),
       dom: x.dom || 'na',
-      sect: x.sect == null ? 'na' : x.sect === 'mid' ? 'mid' : (x.sect === 'strong') === (side === 'long') ? 'with' : 'against'
+      sect: x.sect == null ? 'na' : x.sect === 'mid' ? 'mid' : (x.sect === 'strong') === (side === 'long') ? 'with' : 'against',
+      room: (() => { const rr = p ? T.roomR(k, i, side, p.dist) : null; return rr == null ? 'na' : rr < 1 ? 'tight' : rr < 2.5 ? 'mid' : 'open'; })()
     };
   }
 
@@ -1897,7 +1920,7 @@ const TeamLearn = (() => {
         const p = T.plan(ind, k, i, s.side, s.stopRef);
         const res = T.simulate(k, i, p, s.side);
         if (!res) continue;
-        out.push({ key, r: res.r, t: k[i].t + (res.bars + 1) * 300000, f: features(ind, k, i, s.side, dirAt ? dirAt(k[i].t) : 'flat', s.volx, extFn ? extFn(k[i].t, ind.c[i]) : null) });
+        out.push({ key, r: res.r, t: k[i].t + (res.bars + 1) * 300000, f: features(ind, k, i, s.side, dirAt ? dirAt(k[i].t) : 'flat', s.volx, extFn ? extFn(k[i].t, ind.c[i]) : null, p) });
         busy[key] = i + res.bars;
       }
     }
@@ -3842,15 +3865,17 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (TS.lastRun && Date.now() - TS.lastRun > GAP_MIN) { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }
     TS.log = Array.isArray(r && r.log) ? r.log.filter((x) => x && typeof x.t === 'number' && typeof x.text === 'string').map((x) => ({ t: x.t, text: x.text.slice(0, 160) })).slice(-30) : [];
     const okJ = (j) => j && typeof j.id === 'number' && typeof j.type === 'string' && Team.TYPES[j.type] && (j.side === 'long' || j.side === 'short') && E.SYM.test(j.sym) && (j.r == null || isFinite(j.r)) && (!j.f || typeof j.f === 'object');
-    TS.journal = Array.isArray(r && r.journal) ? r.journal.filter(okJ).map((j) => ({ id: j.id, t0: +j.t0 || 0, t1: +j.t1 || null, sym: j.sym, type: j.type, side: j.side, f: j.f ? Object.fromEntries(Object.keys(L.FEATS).filter((k) => typeof j.f[k] === 'string' && L.FEATS[k][j.f[k]]).map((k) => [k, j.f[k]])) : null, est: j.est != null && isFinite(j.est) ? +j.est : null, grade: ['A', 'B', 'C'].includes(j.grade) ? j.grade : null, risk: j.risk != null && isFinite(j.risk) ? +j.risk : null, riskReal: j.riskReal != null && isFinite(j.riskReal) ? +j.riskReal : null, src: j.src === 'deleg' ? 'deleg' : 'auto', why: String(j.why || '').slice(0, 300), review: j.review ? String(j.review).slice(0, 400) : null, r: j.r == null ? null : +j.r, pnl: j.pnl != null && isFinite(j.pnl) ? +j.pnl : null, exit: typeof j.exit === 'string' ? j.exit.slice(0, 10) : null, ok: !!j.ok, cancel: !!j.cancel, explore: !!j.explore, th: Array.isArray(j.th) ? j.th.filter((k) => TH_KEYS.includes(k)) : null, thx: typeof j.thx === 'string' ? j.thx.slice(0, 200) : null })).slice(-300) : [];
+    TS.journal = Array.isArray(r && r.journal) ? r.journal.filter(okJ).map((j) => ({ id: j.id, t0: +j.t0 || 0, t1: +j.t1 || null, sym: j.sym, type: j.type, side: j.side, f: j.f ? Object.fromEntries(Object.keys(L.FEATS).filter((k) => typeof j.f[k] === 'string' && L.FEATS[k][j.f[k]]).map((k) => [k, j.f[k]])) : null, est: j.est != null && isFinite(j.est) ? +j.est : null, grade: ['A', 'B', 'C'].includes(j.grade) ? j.grade : null, risk: j.risk != null && isFinite(j.risk) ? +j.risk : null, riskReal: j.riskReal != null && isFinite(j.riskReal) ? +j.riskReal : null, src: j.src === 'deleg' ? 'deleg' : 'auto', why: String(j.why || '').slice(0, 300), review: j.review ? String(j.review).slice(0, 400) : null, r: j.r == null ? null : +j.r, pnl: j.pnl != null && isFinite(j.pnl) ? +j.pnl : null, exit: typeof j.exit === 'string' ? j.exit.slice(0, 10) : null, ok: !!j.ok, cancel: !!j.cancel, explore: !!j.explore, th: Array.isArray(j.th) ? j.th.filter((k) => TH_KEYS.includes(k)) : null, thx: typeof j.thx === 'string' ? j.thx.slice(0, 200) : null, con: Array.isArray(j.con) ? j.con.filter((x) => typeof x === 'string').map((x) => x.slice(0, 120)).slice(0, 5) : null })).slice(-300) : [];
     TS.weeks = Array.isArray(r && r.weeks) ? r.weeks.filter((w) => w && typeof w.w === 'number' && Number.isInteger(w.n) && isFinite(w.R) && isFinite(w.pnl)).map((w) => ({ w: w.w, n: w.n, win: Number.isInteger(w.win) ? w.win : 0, R: +w.R, pnl: +w.pnl, audit: w.audit !== false })).slice(0, 12) : [];
     const au = r && r.audit;
     TS.audit = au && typeof au.k === 'string' && isFinite(au.base) && Number.isInteger(au.id) && Array.isArray(au.open) && typeof au.t === 'number' ? { k: au.k.slice(0, 40), base: +au.base, id: au.id, open: au.open.filter((x) => Number.isInteger(x)).slice(0, 200), t: au.t } : null;
+    const ch = r && r.coach;
+    TS.coach = ch && Array.isArray(ch.rules) ? { rules: ch.rules.filter((x) => x && COACH[x.k] && typeof x.t === 'number').slice(0, 3).map((x) => ({ k: x.k, t: x.t })) } : { rules: [] };
     TS.delegs = Array.isArray(r && r.delegs) ? r.delegs.filter((d) => d && E.SYM.test(d.sym) && (d.side === 'long' || d.side === 'short') && typeof d.until === 'number' && typeof d.id === 'string').slice(0, 20) : [];
   }
   function saveTeam() {
     if (SY.applying) return;
-    try { localStorage.setItem(TKEY, JSON.stringify({ v: 4, auto: TS.auto, log: TS.log, delegs: TS.delegs, journal: TS.journal.map((j) => { const o = Object.assign({}, j); delete o.thb; return o; }), lastRun: TS.lastRun || 0, halt: !!TS.halt, resumeAt: TS.resumeAt || 0, weeks: TS.weeks, audit: TS.audit })); } catch (e) { return; }
+    try { localStorage.setItem(TKEY, JSON.stringify({ v: 4, auto: TS.auto, log: TS.log, delegs: TS.delegs, journal: TS.journal.map((j) => { const o = Object.assign({}, j); delete o.thb; return o; }), lastRun: TS.lastRun || 0, halt: !!TS.halt, resumeAt: TS.resumeAt || 0, weeks: TS.weeks, audit: TS.audit, coach: TS.coach })); } catch (e) { return; }
   }
   const BAR5 = 5 * 60000;
   const MD = { fund: {}, oi: {}, fg: [], fundNow: {}, fsym: {}, h1: {}, t: 0, loading: false, ok: { fund: null, oi: null, fg: null } };
@@ -4057,9 +4082,39 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     { t: Date.UTC(2026, 10, 18, 19, 0), name: 'FOMC 會議紀要' },
     { t: Date.UTC(2026, 10, 25, 13, 30), name: '美國 PCE 物價' },
     { t: Date.UTC(2026, 11, 9, 19, 0), name: 'FOMC 利率決議' },
-    { t: Date.UTC(2026, 11, 10, 13, 30), name: '美國 11 月 CPI' }
+    { t: Date.UTC(2026, 11, 10, 13, 30), name: '美國 11 月 CPI' },
+    { t: Date.UTC(2027, 0, 13, 13, 30), name: '美國 12 月 CPI' },
+    { t: Date.UTC(2027, 0, 27, 19, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 1, 11, 13, 30), name: '美國 1 月 CPI' },
+    { t: Date.UTC(2027, 1, 25, 13, 30), name: '美國 1 月 PCE 物價' },
+    { t: Date.UTC(2027, 2, 10, 13, 30), name: '美國 2 月 CPI' },
+    { t: Date.UTC(2027, 2, 17, 18, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 2, 31, 12, 30), name: '美國 2 月 PCE 物價' },
+    { t: Date.UTC(2027, 3, 13, 12, 30), name: '美國 3 月 CPI' },
+    { t: Date.UTC(2027, 3, 28, 18, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 4, 12, 12, 30), name: '美國 4 月 CPI' },
+    { t: Date.UTC(2027, 4, 27, 12, 30), name: '美國 4 月 PCE 物價' },
+    { t: Date.UTC(2027, 5, 9, 18, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 5, 10, 12, 30), name: '美國 5 月 CPI' },
+    { t: Date.UTC(2027, 6, 14, 12, 30), name: '美國 6 月 CPI' },
+    { t: Date.UTC(2027, 6, 28, 18, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 6, 29, 12, 30), name: '美國 6 月 PCE 物價' },
+    { t: Date.UTC(2027, 7, 11, 12, 30), name: '美國 7 月 CPI' },
+    { t: Date.UTC(2027, 7, 25, 12, 30), name: '美國 7 月 PCE 物價' },
+    { t: Date.UTC(2027, 8, 14, 12, 30), name: '美國 8 月 CPI' },
+    { t: Date.UTC(2027, 8, 15, 18, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 8, 30, 12, 30), name: '美國 8 月 PCE 物價' },
+    { t: Date.UTC(2027, 9, 14, 12, 30), name: '美國 9 月 CPI' },
+    { t: Date.UTC(2027, 10, 10, 13, 30), name: '美國 10 月 CPI' },
+    { t: Date.UTC(2027, 10, 17, 19, 0), name: 'FOMC 利率決議' },
+    { t: Date.UTC(2027, 10, 24, 13, 30), name: '美國 10 月 PCE 物價' },
+    { t: Date.UTC(2027, 11, 10, 13, 30), name: '美國 11 月 CPI' },
+    { t: Date.UTC(2027, 11, 22, 13, 30), name: '美國 11 月 PCE 物價' }
   ];
-  const CAL_UNTIL = Date.UTC(2026, 11, 11);
+  const CAL_UNTIL = Date.UTC(2027, 11, 23);
+  const CAL_TBD = ['FOMC 會議紀要（決議後約 3 週）', 'PCE（2026 年 11、12 月與 2027 年 3、5、9 月的數據）公布日'];
+  const fYMD = (t) => { const d = new Date(t); return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate(); };
+  const calSrc = (n) => (/FOMC/.test(n) ? '聯準會（日期官方標示暫定）' : /CPI/.test(n) ? '美國勞工統計局 BLS' : /PCE/.test(n) ? '美國經濟分析局 BEA' : '');
   function macroWindow(t) { return MACRO_CAL.find((e) => t >= e.t - 30 * 60000 && t <= e.t + 60 * 60000) || null; }
   function nextMacro(t) { return MACRO_CAL.find((e) => e.t + 60 * 60000 > t) || null; }
   const TRUSTED = /coindesk|the ?block|decrypt|cointelegraph|reuters|bloomberg|cnbc|blockworks|wsj|financial times|ft\.com|theblock/i;
@@ -4275,8 +4330,18 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const ss = sectState(sig.sym);
     if (long && ss === 'weak') { mult *= 0.75; notes.push(sectName(sig.sym) + ' 板塊偏弱，買漲減碼'); }
     if (!long && ss === 'strong') { mult *= 0.75; notes.push(sectName(sig.sym) + ' 板塊偏強，買跌減碼'); }
-    return { block: null, mult: Math.max(0.25, mult), notes };
+    const rp = f.room === 'tight' && sig.dec && sig.dec.parts ? sig.dec.parts.find((x) => x.fk === 'room') : null;
+    if (rp && rp.n >= 15 && rp.avg != null && rp.avg < -0.1) { mult *= 0.75; notes.push('前方 1R 內就有' + (long ? '壓力' : '支撐') + '，這類單過去平均 ' + L.fmtR(rp.avg) + '，減碼'); }
+    const con = notes.slice();
+    if (sig.dec && sig.dec.avoid && sig.dec.avoid.length) con.push('符合團隊「避開」守則：' + L.label(sig.dec.avoid[0]));
+    if ((long && f.news === 'bad') || (!long && f.news === 'good')) con.push('這個幣最近的新聞跟這個方向相反');
+    const lastSame = TS.journal.filter((j) => !j.cancel && j.sym === sig.sym && j.r != null && j.t1 && t - j.t1 < 86400000).pop();
+    if (lastSame && lastSame.r < 0) con.push('團隊 24 小時內做 ' + sig.sym + ' 剛賠過（' + L.fmtR(lastSame.r) + '）');
+    if (sig.dec && sig.dec.parts && sig.dec.parts.length && sig.dec.parts.every((x) => x.n < 15)) con.push('同類樣本都不到 15 份，預估不可靠');
+    if (con.length >= CON_MAX) return { block: '反方審查：找到 ' + con.length + ' 個反對理由（' + con.slice(0, 3).join('；') + '），不做', mult, notes, con };
+    return { block: null, mult: Math.max(0.25, mult), notes, con };
   }
+  const CON_MAX = 3;
   const RISK = { day: 0.03, week: 0.05, halt: 0.15, open: 0.05, side: 0.03, streak: 4, cool: 3600000, shock: 0.015 };
   function riskOf(p) {
     if (p.sl == null) return p.margin;
@@ -4440,7 +4505,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
           if (i < 70) continue;
           for (const s of Team.detect(c.ind, c.k, i)) {
             const pl = Team.plan(c.ind, c.k, i, s.side, s.stopRef);
-            const f = L.features(c.ind, c.k, i, s.side, dir, s.volx, extAt(sym, c.k[i].t));
+            const f = L.features(c.ind, c.k, i, s.side, dir, s.volx, extAt(sym, c.k[i].t), pl);
             const rt = TS.rt[sym] || Team.ratios(c.k.slice(Math.max(0, i - 2000), i + 1));
             if (!TS.rt[sym]) TS.rt[sym] = rt;
             const rp = Team.replay(rt, pl, s.side, { runs: 400 });
@@ -4516,18 +4581,41 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const seen = new Set();
     return out.filter((k) => (seen.has(k.t) ? false : (seen.add(k.t), true))).sort((a, b) => a.t - b.t);
   }
+  function curveStats(arr) {
+    let eq = 0, peak = 0, dd = 0;
+    for (const x of arr) { eq += x.r; if (eq > peak) peak = eq; if (peak - eq > dd) dd = peak - eq; }
+    return { dd, total: eq };
+  }
   function evalSamples(samples, symsOf) {
     const res = {};
+    let t0 = Infinity, t1 = 0;
+    for (const x of samples) if (x.t > 0) { if (x.t < t0) t0 = x.t; if (x.t > t1) t1 = x.t; }
+    const cut = t1 > 0 ? t0 + (t1 - t0) * 0.7 : 0;
     for (const key of Team.KEYS) {
       const [type, side] = key.split(':');
-      const rs = samples.filter((x) => x.key === key).map((x) => x.r);
+      const xs = samples.filter((x) => x.key === key).sort((a, b) => (a.t || 0) - (b.t || 0));
+      const rs = xs.map((x) => x.r);
       const st = Team.stats(rs);
       const mc = Team.monteCarlo(rs, { runs: 10000 });
       const per = {};
-      for (const x of samples) if (x.key === key) per[x.sym] = (per[x.sym] || 0) + 1;
-      res[key] = { key, type, side, st, mc, grade: Team.grade(st, mc), per };
+      for (const x of xs) per[x.sym] = (per[x.sym] || 0) + 1;
+      const ins = Team.stats(xs.filter((x) => !(x.t >= cut)).map((x) => x.r));
+      const oos = Team.stats(xs.filter((x) => x.t >= cut).map((x) => x.r));
+      const cv = curveStats(xs);
+      let grade = Team.grade(st, mc);
+      const ovf = oos.n >= 5 && oos.avgR < 0 && ins.avgR > 0;
+      const thin = st.n < 30;
+      if (ovf && grade !== 'C') grade = 'C';
+      res[key] = { key, type, side, st, mc, grade, per, ins, oos, dd: cv.dd, ovf, thin, cut };
     }
     return res;
+  }
+  function trustTxt(res) {
+    if (!res || !res.st.n) return '沒有樣本';
+    if (res.ovf) return '可能過度擬合：前 70% 時間賺、最近 30% 賠，降成 C 級';
+    if (res.oos && res.oos.n < 5) return '最近 30% 時間只有 ' + res.oos.n + ' 次，樣本外還看不出來';
+    if (res.thin) return '樣本不到 30 次，結果大多可能是運氣';
+    return res.oos.avgR >= 0 ? '前後兩段結果一致，可信度較高' : '前後兩段都偏弱';
   }
   async function loadAllHistory() {
     if (TS.loading) return;
@@ -4680,6 +4768,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       const g = guard();
       if (g.block) { sig.block = g.block; return false; }
       const bc = brainCheck(sig);
+      sig.con = bc.con || [];
       if (bc.block) { sig.block = bc.block; return false; }
       if (sig.sym !== 'BTC' && g.btc > RISK.shock) { sig.block = '比特幣 15 分鐘內動了 ' + (g.btc * 100).toFixed(1) + '%，小幣先不進場'; return false; }
       if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
@@ -4704,7 +4793,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (explore) r.pos.explore = true;
     const actualRisk = b.alloc > 0 ? (Math.abs(px - stop) * r.pos.qty) / b.alloc : null;
     const th = !deleg && CLK == null ? thesisNow(sig.sym, sig.side).filter((x) => x.ok).map((x) => x.k) : null;
-    TS.journal.push({ th, id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', explore: !!explore, why: (explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
+    TS.journal.push({ con: !deleg && sig.con && sig.con.length ? sig.con.slice(0, 5) : null, th, id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', explore: !!explore, why: (explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '') + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
     if (TS.journal.length > 300) TS.journal.splice(0, TS.journal.length - 300);
     teamLog((deleg ? '委託成交：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
     if (!deleg && CLK == null) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
@@ -4867,7 +4956,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   }
   function keyRow(res) {
     const st = res.st, mc = res.mc;
-    return '<button class="row sig" data-act="tkey" data-id="' + res.key + '"><span class="body"><b>' + Team.TYPES[res.type].name + '<span class="tag ' + (res.side === 'long' ? 'up' : 'down') + '">' + SIDE[res.side] + '</span><span class="grade g' + res.grade + '">' + res.grade + '</span></b><span class="sub">出現 ' + st.n + ' 次　勝率 ' + (st.n ? Math.round(st.wr * 100) + '%' : '—') + '　平均 ' + (st.n ? fR(st.avgR) : '—') + '　最慘連賠 ' + st.maxLoss + ' 次</span></span><span class="pr"><b class="' + (mc ? cls(mc.p50) : '') + '">' + (mc ? fR(mc.p50) : '—') + '</b><small>做 50 次的中間結果</small></span></button>';
+    return '<button class="row sig" data-act="tkey" data-id="' + res.key + '"><span class="body"><b>' + Team.TYPES[res.type].name + '<span class="tag ' + (res.side === 'long' ? 'up' : 'down') + '">' + SIDE[res.side] + '</span><span class="grade g' + res.grade + '">' + res.grade + '</span></b><span class="sub">出現 ' + st.n + ' 次　勝率 ' + (st.n ? Math.round(st.wr * 100) + '%' : '—') + '　平均 ' + (st.n ? fR(st.avgR) : '—') + '　最慘連賠 ' + st.maxLoss + ' 次' + (res.oos && res.oos.n ? '　樣本外 ' + fR(res.oos.avgR) : '') + (res.ovf ? '　<b class="down">可能過度擬合</b>' : '') + '</span></span><span class="pr"><b class="' + (mc ? cls(mc.p50) : '') + '">' + (mc ? fR(mc.p50) : '—') + '</b><small>做 50 次的中間結果</small></span></button>';
   }
   function teamPosRows() {
     const P = teamPos();
@@ -4893,7 +4982,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
   function journalRows(J) {
     return J.slice(-10).reverse().map((j) => {
       const st = j.cancel ? '<span class="vd vx">不計</span>' : j.r == null ? '<span class="vd vo">進行中</span>' : j.ok ? '<span class="vd vy">對</span>' : '<span class="vd vn">錯</span>';
-      return '<div class="row jrow"><div class="row-main"><div>' + st + '<b>' + esc(j.sym) + '</b><span class="tag ' + (j.side === 'long' ? 'up' : 'down') + '">' + SIDE[j.side] + '</span><span class="sub">　' + Team.TYPES[j.type].name + (j.src === 'deleg' ? '・你委託' : j.explore ? '・試單' : '') + '</span></div><div class="right"><b class="' + (j.r != null ? cls(j.r) : '') + '">' + (j.r != null ? L.fmtR(j.r) : '—') + '</b><div class="sub">預估 ' + (j.est != null ? L.fmtR(j.est) : '—') + (j.risk ? '　風險 ' + (j.risk * 100).toFixed(2) + '%' : '') + '</div></div></div><p class="jw">' + esc(fT(j.t0)) + '　' + esc(featTxt(j.f)) + '</p><p class="jw">為什麼做：' + esc(j.why || '—') + '</p>' + (j.review ? '<p class="jw jr">檢討：' + esc(j.review) + '</p>' : '') + '</div>';
+      return '<div class="row jrow"><div class="row-main"><div>' + st + '<b>' + esc(j.sym) + '</b><span class="tag ' + (j.side === 'long' ? 'up' : 'down') + '">' + SIDE[j.side] + '</span><span class="sub">　' + Team.TYPES[j.type].name + (j.src === 'deleg' ? '・你委託' : j.explore ? '・試單' : '') + '</span></div><div class="right"><b class="' + (j.r != null ? cls(j.r) : '') + '">' + (j.r != null ? L.fmtR(j.r) : '—') + '</b><div class="sub">預估 ' + (j.est != null ? L.fmtR(j.est) : '—') + (j.risk ? '　風險 ' + (j.risk * 100).toFixed(2) + '%' : '') + '</div></div></div><p class="jw">' + esc(fT(j.t0)) + '　' + esc(featTxt(j.f)) + '</p><p class="jw">為什麼做：' + esc(j.why || '—') + '</p>' + (j.con && j.con.length ? '<p class="jw">反方意見：' + esc(j.con.join('；')) + '</p>' : '') + (j.review ? '<p class="jw jr">檢討：' + esc(j.review) + '</p>' : '') + '</div>';
     }).join('');
   }
   function ruleRows(list) {
@@ -4987,6 +5076,258 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const b = j.thb || [];
     return '<div class="sub">論點：' + j.th.map((k) => esc(TH_TXT[k])).join('・') + '　' + (b.length ? '<b class="down">動搖：' + b.map((k) => esc(TH_TXT[k])).join('、') + '變了' + (b.length < 2 && !b.includes('news') ? '（再一項就出場）' : '') + '</b>' : '<b class="up">成立</b>') + '</div>';
   }
+  const TA = { cache: {}, busy: null };
+  function taEnsure(sym) {
+    const c = TA.cache[sym];
+    if (TA.busy || (c && c.mode === S.mode && Date.now() - c.t < (c.err ? 120000 : 3600000))) return;
+    taLoad(sym);
+  }
+  async function taLoad(sym) {
+    TA.busy = sym;
+    try {
+      const live = S.mode === 'live';
+      const d = live ? await fetchKlines(sym, '1d', '&limit=250') : simAgg(sym, 1440);
+      const w = live ? await fetchKlines(sym, '1w', '&limit=120') : simAgg(sym, 10080);
+      TA.cache[sym] = { t: Date.now(), mode: S.mode, a: taAnalyze(d, w, S.prices[sym]) };
+    } catch (e) { TA.cache[sym] = { t: Date.now(), mode: S.mode, err: true }; }
+    TA.busy = null;
+    refreshTeam();
+  }
+  function taLevels(d, px) {
+    const W = 3, piv = [];
+    for (let j = Math.max(W, d.length - 180); j < d.length - W; j++) {
+      let hi = true, lo = true;
+      for (let q = j - W; q <= j + W; q++) { if (q === j) continue; if (d[q].h > d[j].h) hi = false; if (d[q].l < d[j].l) lo = false; }
+      if (hi) piv.push(d[j].h);
+      if (lo) piv.push(d[j].l);
+    }
+    piv.sort((a, b) => a - b);
+    const cl = [];
+    for (const v of piv) { const g = cl[cl.length - 1]; if (g && v / g.v - 1 < 0.015) { g.n++; g.v = (g.v * (g.n - 1) + v) / g.n; } else cl.push({ v, n: 1 }); }
+    return { sup: cl.filter((x) => x.v < px * 0.998).sort((a, b) => b.v - a.v).slice(0, 2), res: cl.filter((x) => x.v > px * 1.002).sort((a, b) => a.v - b.v).slice(0, 2) };
+  }
+  function taAnalyze(d, w, pxNow) {
+    if (!d || d.length < 30) return { short: true, n: d ? d.length : 0 };
+    const px = pxNow > 0 ? pxNow : d[d.length - 1].c;
+    const c = d.map((x) => x.c);
+    const avgN = (a, n) => (a.length >= n ? a.slice(-n).reduce((x, y) => x + y, 0) / n : null);
+    const m20 = avgN(c, 20), m50 = avgN(c, 50), m200 = avgN(c, 200);
+    const wc = w && w.length ? w.map((x) => x.c) : [];
+    const w20 = avgN(wc, 20);
+    const r = Team.rsi(c, 14), ax = Team.adx(d, 14);
+    const rsiV = r[r.length - 1], adxV = ax.adx[ax.adx.length - 1];
+    const n = Math.min(30, c.length);
+    const ys = c.slice(-n);
+    const xm = (n - 1) / 2, ym = ys.reduce((a, b) => a + b, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (i - xm) * (ys[i] - ym); den += (i - xm) * (i - xm); }
+    const slope = den > 0 && ym > 0 ? num / den / ym : null;
+    const lv = taLevels(d, px);
+    let score = 0, known = 0;
+    for (const m of [m20, m50, m200, w20]) if (m != null) { known++; score += px > m ? 1 : -1; }
+    if (rsiV != null) { known++; score += rsiV > 55 ? 1 : rsiV < 45 ? -1 : 0; }
+    const lean = known < 3 ? null : score >= 3 ? 'bull' : score <= -3 ? 'bear' : 'range';
+    return { px, m20, m50, m200, w20, rsi: rsiV, adx: adxV, slope, sup: lv.sup, res: lv.res, lean, n: d.length, wn: wc.length };
+  }
+  function taHTML() {
+    const sym = state.settings.sym;
+    taEnsure(sym);
+    const c = TA.cache[sym];
+    const head = '<section><h3>技術分析師　' + esc(sym) + '　日線・週線</h3>';
+    const foot = '<p class="say">看的是目前圖表上的幣，換幣就會重新分析，每小時更新。這是情境整理，不是預測，也不替三種情境指定機率。團隊下單時會用同樣的想法檢查「前方離擋路的高低點還有多遠」。</p></section>';
+    if (!c || (TA.busy === sym && !c.a)) return head + '<div class="empty">讀取日線和週線中。</div>' + foot;
+    if (c.err) return head + '<div class="empty">日線資料讀取失敗，2 分鐘後再試。</div>' + foot;
+    const a = c.a;
+    if (a.short) return head + '<div class="empty">' + (c.mode === 'live' ? '這個幣上市太短' : '模擬行情的歷史太短') + '（只有 ' + a.n + ' 根日線），日線分析無法計算。</div>' + foot;
+    const vs = (m, name) => '<div><span>' + name + '</span><b>' + (m == null ? '資料不夠，無法計算' : fP(m) + '　' + (a.px > m ? '<span class="up">價格在上方</span>' : '<span class="down">價格在下方</span>')) + '</b></div>';
+    const lvTxt = (arr) => arr.map((x) => fP(x.v) + '（' + fPct(x.v / a.px - 1, 1) + (x.n > 1 ? '，碰過 ' + x.n + ' 次' : '') + '）').join('、');
+    const R1 = a.res[0] ? a.res[0].v : null, S1 = a.sup[0] ? a.sup[0].v : null;
+    const leanTxt = { bull: '偏多', bear: '偏空', range: '盤整' }[a.lean] || '指標不夠，無法判斷';
+    const sc = (name, on, ok, bad, watch) => '<div class="tasc' + (on ? ' on' : '') + '"><b>' + name + (on ? '<span class="vd vo">目前比較接近</span>' : '') + '</b><p class="jw">成立條件：' + ok + '</p><p class="jw">失效條件：' + bad + '</p><p class="jw">要追蹤：' + watch + '</p></div>';
+    const r1t = R1 ? fP(R1) : '180 天高點';
+    const s1t = S1 ? fP(S1) : '180 天低點';
+    return head + '<div class="verdict ' + (a.lean === 'bull' ? 'up' : a.lean === 'bear' ? 'down' : '') + '" style="font-size:20px">' + leanTxt + '</div><div class="sub">價格 ' + fP(a.px) + '　日線 ' + a.n + ' 根、週線 ' + a.wn + ' 根</div>' +
+      '<div class="calc">' + vs(a.m20, '20 日均線') + vs(a.m50, '50 日均線') + vs(a.m200, '200 日均線') + vs(a.w20, '20 週均線') +
+      '<div><span>日線 RSI（動能）</span><b>' + (a.rsi == null ? '無法計算' : a.rsi.toFixed(0) + (a.rsi > 70 ? '　過熱' : a.rsi < 30 ? '　超賣' : a.rsi > 50 ? '　偏強' : '　偏弱')) + '</b></div>' +
+      '<div><span>日線 ADX（趨勢強度）</span><b>' + (a.adx == null ? '無法計算' : a.adx.toFixed(0) + (a.adx >= 25 ? '　有趨勢' : a.adx < 20 ? '　盤整' : '　普通')) + '</b></div>' +
+      '<div><span>30 天趨勢線</span><b class="' + (a.slope != null ? cls(a.slope) : '') + '">' + (a.slope == null ? '無法計算' : '每天 ' + fPct(a.slope, 2)) + '</b></div>' +
+      '<div><span>上方壓力</span><b>' + (a.res.length ? lvTxt(a.res) : '180 天內沒有，正在高檔') + '</b></div>' +
+      '<div><span>下方支撐</span><b>' + (a.sup.length ? lvTxt(a.sup) : '180 天內沒有，正在低檔') + '</b></div></div>' +
+      '<h4 class="rh">三種情境</h4>' +
+      sc('偏多', a.lean === 'bull', '日線收盤站上 ' + r1t + '，而且 RSI 守在 50 以上', '日線收盤跌破 ' + s1t, '突破那天成交量有沒有放大、站上後回測會不會守住') +
+      sc('盤整', a.lean === 'range', '價格留在 ' + s1t + '～' + r1t + ' 之間，ADX 低於 20', '任何一邊收盤突破', '碰到上下緣有沒有被擋回來') +
+      sc('偏空', a.lean === 'bear', '日線收盤跌破 ' + s1t + '，而且 RSI 在 50 以下', '日線重新收回 ' + s1t + ' 之上', '跌破那天成交量、反彈會不會被 20 日均線壓回') +
+      '<div class="cta" style="margin-top:12px"><button class="btn quiet" data-act="tare">重新分析</button></div>' + foot;
+  }
+
+  const COACH = {
+    nosl: { t: '每筆下單前先設停損', fact: (n) => n + ' 筆沒有設停損', how: '每筆成交後檢查：有沒有停損線', chk: (t) => !!t.hadSL },
+    over: { t: '碰到停損就出場，不把停損拉遠', fact: (n) => n + ' 筆賠超過 1.3R（停損被拉遠、沒照做，或跳空）', how: '每筆結束後檢查：虧損有沒有超過 1.3R', chk: (t) => !(t.r != null && t.r < -1.3) },
+    revenge: { t: '賠錢後 15 分鐘內不下新單', fact: (n) => n + ' 筆是賠錢後 15 分鐘內又下的單', how: '每筆檢查：上一筆賠錢的話，距離有沒有超過 15 分鐘', chk: (t, prev) => !(prev && prev.pnl < 0 && t.t0 - prev.t1 < 15 * 60000) },
+    heavy: { t: '每筆風險不超過總資產 2%', fact: (n) => n + ' 筆風險超過總資產 2%（或押超過一半資產）', how: '每筆檢查：停損距離 × 部位 ÷ 總資產 ≤ 2%', chk: (t) => (t.riskPct != null ? t.riskPct <= 0.02 + 1e-9 : !(t.sizePct > 0.5)) },
+    gut: { t: '每筆都選進場理由，不憑感覺', fact: (n) => n + ' 筆沒選理由或憑感覺', how: '每筆檢查：有沒有選理由、是不是「憑感覺」', chk: (t) => !!t.reason && t.reason !== 'gut' },
+    cutwin: { t: '有設停利就讓它跑到停利或停損', fact: (n) => n + ' 筆賺錢但沒到停利就手動出場', how: '每筆檢查：有停利的單是不是手動提早出場', chk: (t) => !(t.why === 'manual' && t.pnl > 0 && t.tp != null) },
+    fees: { t: '價差沒超過手續費 3 倍不出場（停損除外）', fact: (n) => n + ' 筆價差不到手續費 3 倍就出場', how: '每筆檢查：價差 ÷ 手續費 ≥ 3，或是停損出場', chk: (t) => t.why === 'sl' || t.why === 'liq' || Math.abs(t.gross) >= t.fees * 3 },
+    trend: { t: '只順著均線方向進場', fact: (n) => n + ' 筆逆著均線方向進場', how: '每筆檢查：買漲時價格在均線上、買跌時在均線下', chk: (t) => !(t.ctx && t.ctx.above != null) || (t.side === 'long') === !!t.ctx.above }
+  };
+  function coachRun() {
+    const all = E.mine(state);
+    const T = all.slice(-20);
+    const prevOf = (t) => { const i = all.indexOf(t); return i > 0 ? all[i - 1] : null; };
+    const avg = (a) => (a.length ? a.reduce((x, t) => x + (t.r != null ? t.r : 0), 0) / a.length : null);
+    const facts = [];
+    for (const k of Object.keys(COACH)) {
+      const bad = T.filter((t) => !COACH[k].chk(t, prevOf(t)));
+      if (!bad.length) continue;
+      const good = T.filter((t) => COACH[k].chk(t, prevOf(t)));
+      const ab = avg(bad.filter((t) => t.r != null)), ag = avg(good.filter((t) => t.r != null));
+      const cmp = bad.filter((t) => t.r != null).length >= 3 && good.filter((t) => t.r != null).length >= 3 ? '這些單平均 ' + L.fmtR(ab) + '，其他單平均 ' + L.fmtR(ag) : '';
+      facts.push({ k, n: bad.length, share: bad.length / T.length, txt: COACH[k].fact(bad.length), cmp, w: bad.length / T.length + (ab != null && ag != null && ab < ag ? 0.2 : 0) });
+    }
+    facts.sort((a, b) => b.w - a.w);
+    const guess = [];
+    const wT = T.filter((t) => t.pnl > 0), lT = T.filter((t) => t.pnl <= 0);
+    const hold = (a) => a.reduce((x, t) => x + (t.t1 - t.t0), 0) / a.length;
+    if (wT.length >= 3 && lT.length >= 3 && hold(lT) > hold(wT) * 2) guess.push('賠錢的單平均抱 ' + E.fmtDur(hold(lT)) + '，賺錢的只抱 ' + E.fmtDur(hold(wT)) + '：可能是不想認賠、太早獲利了結（處置效應）');
+    const after = T.filter((t) => { const p = prevOf(t); return p && p.pnl < 0 && t.t0 - p.t1 < 15 * 60000; });
+    if (after.length >= 3) guess.push('賠錢後很快又下單 ' + after.length + ' 次：可能想把錢贏回來（情緒性交易）');
+    const chase = T.filter((t) => t.ctx && t.ctx.chg != null && ((t.side === 'long' && t.ctx.chg > 0.015) || (t.side === 'short' && t.ctx.chg < -0.015)));
+    if (chase.length >= 3) guess.push('急漲急跌後才進場 ' + chase.length + ' 次：可能怕錯過（FOMO）');
+    const picks = facts.filter((f) => f.n >= 2).slice(0, 3).map((f) => f.k);
+    for (const k of ['nosl', 'heavy', 'gut']) if (picks.length < 3 && !picks.includes(k)) picks.push(k);
+    return { T, n: T.length, facts, guess, picks };
+  }
+  function coachTrack(rule) {
+    const all = E.mine(state);
+    const after = all.filter((t) => t.t0 >= rule.t);
+    const prevOf = (t) => { const i = all.indexOf(t); return i > 0 ? all[i - 1] : null; };
+    const ok = after.filter((t) => COACH[rule.k].chk(t, prevOf(t)));
+    return { n: after.length, ok: ok.length };
+  }
+  function coachHTML() {
+    const cr = coachRun();
+    const head = '<section><h3>交易教練　' + (cr.n >= 5 ? '檢討你最近 ' + Math.min(20, cr.n) + ' 筆' : '檢討你自己的單') + '</h3>';
+    if (cr.n < 5) return head + '<div class="empty">你自己的單還不到 5 筆（目前 ' + cr.n + ' 筆），先多做幾筆再檢討。</div></section>';
+    const warn = cr.n < 20 ? '<p class="say down">只有 ' + cr.n + ' 筆，樣本不夠，下面的結論可能是運氣，參考就好。</p>' : '';
+    const factHTML = cr.facts.length ? '<div class="list">' + cr.facts.slice(0, 5).map((f) => '<div class="row"><div class="row-main"><div><b>' + esc(f.txt) + '</b>' + (f.cmp ? '<div class="sub">' + esc(f.cmp) + '</div>' : '') + '</div><span class="sub">' + Math.round(f.share * 100) + '%</span></div></div>').join('') + '</div>' : '<div class="empty">紀錄裡沒有找到重複出現的錯誤。</div>';
+    const guessHTML = cr.guess.length ? '<div class="list">' + cr.guess.map((g) => '<div class="row"><div class="row-main"><span class="sub">' + esc(g) + '</span></div></div>').join('') + '</div>' : '<div class="empty">沒有明顯的行為偏誤跡象。</div>';
+    const adopted = TS.coach && TS.coach.rules && TS.coach.rules.length ? TS.coach.rules : null;
+    let ruleHTML;
+    if (adopted) {
+      ruleHTML = '<div class="list">' + adopted.map((r) => { const tr = coachTrack(r); return '<div class="row"><div class="row-main"><div><b>' + esc(COACH[r.k].t) + '</b><div class="sub">' + esc(COACH[r.k].how) + '</div></div><span class="sub">' + (tr.n ? '遵守 ' + tr.ok + ' / ' + tr.n + ' 筆' : '採用後還沒交易') + '</span></div></div>'; }).join('') + '</div><p class="say">從 ' + fT(adopted[0].t) + ' 採用。遵守率是照紀錄算的，不代表一定能提高獲利。</p><div class="cta"><button class="btn quiet" data-act="coachNew">重新檢討、換新規則</button></div>';
+    } else {
+      ruleHTML = '<div class="list">' + cr.picks.map((k) => '<div class="row"><div class="row-main"><div><b>' + esc(COACH[k].t) + '</b><div class="sub">檢核方式：' + esc(COACH[k].how) + '</div></div></div></div>').join('') + '</div><div class="cta"><button class="btn solid" data-act="coachUse">採用這 3 條，開始追蹤</button></div>';
+    }
+    return head + warn + '<h4 class="rh">紀錄證明的事</h4>' + factHTML + '<h4 class="rh">推測（紀錄看不到你的想法，只是可能）</h4>' + guessHTML + '<p class="say">錯失的機會：紀錄只有你做過的單，看不出你沒做的好機會，所以不判斷。</p><h4 class="rh">你的 3 條交易規則</h4>' + ruleHTML + '</section>';
+  }
+
+  function betaOf(sym) {
+    if (sym === 'BTC') return { b: 1, est: false };
+    const a = TS.recent && TS.recent[sym], bk = TS.recent && TS.recent.BTC;
+    if (a && bk && a.length > 40 && bk.length > 40) {
+      const m = new Map(bk.map((x) => [x.t, x.c]));
+      const xs = [], ys = [];
+      for (let i = 1; i < a.length; i++) { const p0 = m.get(a[i - 1].t), p1 = m.get(a[i].t); if (p0 > 0 && p1 > 0 && a[i - 1].c > 0) { xs.push(p1 / p0 - 1); ys.push(a[i].c / a[i - 1].c - 1); } }
+      if (xs.length >= 40) {
+        const mx = xs.reduce((s, v) => s + v, 0) / xs.length, my = ys.reduce((s, v) => s + v, 0) / ys.length;
+        let cv = 0, vr = 0;
+        for (let i = 0; i < xs.length; i++) { cv += (xs[i] - mx) * (ys[i] - my); vr += (xs[i] - mx) * (xs[i] - mx); }
+        if (vr > 0) return { b: Math.min(3, Math.max(0.3, cv / vr)), est: false };
+      }
+    }
+    return { b: 1.3, est: true };
+  }
+  function stressOf(P, move, scale) {
+    let gap = 0, stop = 0;
+    for (const p of P) {
+      const f = scale ? scale(p) : 1;
+      if (!(f > 0)) continue;
+      const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
+      const long = p.side === 'long';
+      const np = px * (1 + Math.max(-0.95, move * betaOf(p.sym).b));
+      const floor = -(p.margin + E.posPnl(p, px));
+      const d1 = Math.max(floor, (np - px) * p.qty * (long ? 1 : -1)) * f;
+      let np2 = np;
+      if (p.sl != null && (long ? p.sl < px : p.sl > px)) np2 = long ? Math.max(np, p.sl) : Math.min(np, p.sl);
+      if (p.tp != null && (long ? p.tp > px : p.tp < px)) np2 = long ? Math.min(np2, p.tp) : Math.max(np2, p.tp);
+      const d2 = Math.max(floor, (np2 - px) * p.qty * (long ? 1 : -1)) * f;
+      gap += d1; stop += d2;
+    }
+    return { gap, stop };
+  }
+  function stressHTML() {
+    const P = state.positions;
+    const head = '<section><h3>壓力測試　整個帳戶</h3>';
+    if (!P.length) return head + '<div class="empty">目前沒有持倉，沒有要測的部位。有單之後會模擬「比特幣跌 20%」整個帳戶會怎樣。</div></section>';
+    const eq = E.equity(state, S.prices);
+    const val = (p) => (S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry) * p.qty;
+    const tot = P.reduce((a, p) => a + val(p), 0);
+    const bySym = {}, bySect = {}, side = { long: 0, short: 0 };
+    for (const p of P) { bySym[p.sym] = (bySym[p.sym] || 0) + val(p); const sn = sectName(p.sym); bySect[sn] = (bySect[sn] || 0) + val(p); side[p.side] += val(p); }
+    const top = Object.entries(bySym).sort((a, b) => b[1] - a[1])[0];
+    const topS = Object.entries(bySect).sort((a, b) => b[1] - a[1])[0];
+    const s0 = stressOf(P, -0.2);
+    const big = P.slice().sort((a, b) => val(b) - val(a))[0];
+    const sA = stressOf(P, -0.2, (p) => (p === big ? 0.5 : 1));
+    const sB = stressOf(P, -0.2, () => 0.5);
+    const feeOf = (list, f) => list.reduce((a, p) => a + val(p) * f * E.feeRate(p), 0);
+    const pe = (x) => fU(x) + '（' + fPct(eq > 0 ? x / eq : 0, 1) + '）';
+    const betas = Array.from(new Set(P.map((p) => p.sym))).map((s) => { const b = betaOf(s); return esc(s) + ' ' + b.b.toFixed(2) + (b.est ? '（估計）' : ''); }).join('、');
+    const row = (k, v, c) => '<div><span>' + k + '</span><b class="' + (c || '') + '">' + v + '</b></div>';
+    return head + '<div class="verdict ' + cls(s0.gap) + '" style="font-size:20px">比特幣跌 20%：' + fS(s0.stop) + ' USDT</div><div class="sub">停損照價成交的情況；占總資產 ' + fPct(eq > 0 ? s0.stop / eq : 0, 1) + '</div>' +
+      '<div class="calc">' + row('目前持倉', P.length + ' 筆，總部位 ' + fU(tot) + ' USDT（總資產的 ' + Math.round(eq > 0 ? (tot / eq) * 100 : 0) + '%）') +
+      row('停損照價成交', pe(s0.stop), cls(s0.stop)) + row('停損失效（跳空、交易所卡住）', pe(s0.gap), cls(s0.gap)) +
+      row('最大單一幣', esc(top[0]) + ' 佔總資產 ' + Math.round(eq > 0 ? (top[1] / eq) * 100 : 0) + '%') +
+      row('最集中的板塊', esc(topS[0]) + ' 佔持倉 ' + Math.round(tot > 0 ? (topS[1] / tot) * 100 : 0) + '%') +
+      row('方向', '買漲 ' + Math.round(tot > 0 ? (side.long / tot) * 100 : 0) + '%・買跌 ' + Math.round(tot > 0 ? (side.short / tot) * 100 : 0) + '%') +
+      row('跟比特幣的連動（β）', betas) + '</div>' +
+      '<h4 class="rh">調整方案比較（停損失效的情況）</h4><div class="calc">' +
+      row('不動', pe(s0.gap), cls(s0.gap)) +
+      row(esc(big.sym) + ' 減半', pe(sA.gap) + '　手續費約 ' + fU(feeOf([big], 0.5)), cls(sA.gap)) +
+      row('全部減半', pe(sB.gap) + '　手續費約 ' + fU(feeOf(P, 0.5)), cls(sB.gap)) + '</div>' +
+      '<p class="say">β 用最近約 12 小時的 5 分 K 跟比特幣比；資料不夠的幣先用 1.3 估計。真的大跌時幣跟幣會一起跌得更兇，實際可能更糟。這只是假設情境，不保證避開虧損；要不要調整由你決定。</p></section>';
+  }
+
+  function dataCheck() {
+    const now = Date.now();
+    const age = (t) => (t ? now - t : Infinity);
+    const ago = (t) => (t ? fAgo(Math.max(60000, now - t)) : '還沒讀到');
+    const it = [];
+    const add = (k, st, d) => it.push({ k, st, d });
+    if (S.mode === 'live' && !S.stale) add('即時價格', 'ok', '幣安即時連線正常');
+    else if (S.mode === 'sim') add('即時價格', 'wait', '目前是練習行情，不是真實價格');
+    else add('即時價格', 'bad', S.stale ? '超過 15 秒沒收到報價，團隊暫停進場' : '連線中');
+    const badPx = state.positions.filter((p) => !(S.prices[p.sym] > 0));
+    add('持倉報價', badPx.length ? 'bad' : 'ok', badPx.length ? badPx.map((p) => p.sym).join('、') + ' 沒有報價' : state.positions.length ? state.positions.length + ' 筆持倉都有報價' : '目前沒有持倉');
+    add('掃描用 5 分 K', age(TS.lastScan) < 180000 ? 'ok' : TS.lastScan ? 'bad' : 'wait', TS.lastScan ? '最後掃描 ' + ago(TS.lastScan) : '還沒掃描');
+    add('時光機回測', TS.results ? 'ok' : 'wait', TS.results ? (TS.samples || []).length + ' 份樣本，' + ago(TS.loadedAt) + '讀完' : '還在讀取');
+    if (S.mode === 'live') {
+      add('資金費率', MD.ok.fund === true ? 'ok' : MD.ok.fund === false ? 'bad' : 'wait', MD.ok.fund === false ? '幣安期貨讀取失敗，相關條件不列入' : MD.ok.fund ? '幣安期貨，' + ago(MD.t) + '更新' : '讀取中');
+      add('未平倉量', MD.ok.oi === true ? 'ok' : MD.ok.oi === false ? 'bad' : 'wait', MD.ok.oi === false ? '讀取失敗，相關條件不列入' : MD.ok.oi ? '幣安期貨' : '讀取中');
+      const fg = MD.fg.length ? MD.fg[MD.fg.length - 1] : null;
+      add('恐懼貪婪指數', fg && age(fg.t) < 2 * 86400000 ? 'ok' : MD.ok.fg === false ? 'bad' : 'wait', fg ? 'alternative.me，資料日期 ' + fYMD(fg.t) : '讀取中');
+      const bd = MD.btcD ? MD.btcD[MD.btcD.length - 1] : null;
+      add('比特幣日線、週線', bd && age(bd.t) < 2 * 86400000 ? 'ok' : bd ? 'bad' : 'wait', bd ? MD.btcD.length + ' 根日線' : '讀取中');
+      add('穩定幣總市值', flowAt(now) ? 'ok' : MD.ok.stable === false ? 'bad' : 'wait', flowAt(now) ? 'DefiLlama' : MD.ok.stable === false ? '讀取失敗，資金層不列入' : '讀取中或資料太舊');
+      const dm = MD.dom && MD.dom.hist && MD.dom.hist.length ? MD.dom.hist[MD.dom.hist.length - 1] : null;
+      add('比特幣市佔率', dm && age(dm.t) < 2 * 3600000 ? 'ok' : dm ? 'wait' : 'wait', dm ? 'CoinGecko，' + ago(dm.t) + '記錄，需要累積 20 小時才判斷' : '讀取中');
+    }
+    add('新聞', NW.items && age(NW.t) < 15 * 60000 ? 'ok' : NW.ok === false ? 'bad' : 'wait', NW.items ? (NW.src || 'cryptocurrency.cv') + '，' + ago(NW.t) + '更新' : '讀取中');
+    add('重大數據日曆', now < CAL_UNTIL ? 'ok' : 'bad', now < CAL_UNTIL ? '已排到 ' + fYMD(MACRO_CAL[MACRO_CAL.length - 1].t) + '，有幾個日期待確認（見事件日曆）' : '日曆過期，需要更新');
+    return it;
+  }
+  function dataHTML() {
+    const it = dataCheck();
+    const grp = (st, name) => { const a = it.filter((x) => x.st === st); return a.length ? '<h4 class="rh">' + name + '（' + a.length + '）</h4><div class="list lyr">' + a.map((x) => '<div class="row"><div class="row-main"><span>' + esc(x.k) + '</span><span class="sub">' + esc(x.d) + '</span></div></div>').join('') + '</div>' : ''; };
+    const bad = it.filter((x) => x.st === 'bad').length;
+    return '<section><h3>資料查核員</h3><div class="verdict ' + (bad ? 'down' : '') + '" style="font-size:20px">' + (bad ? bad + ' 項資料有問題' : '資料都正常或讀取中') + '</div>' + grp('bad', '有誤') + grp('wait', '待核實') + grp('ok', '已核實') + '<p class="say">讀不到的資料，團隊會標成「沒有資料」不列入判斷，不會自己補數字。讀不到不代表那邊出事，只是這次沒拿到。</p></section>';
+  }
+  function calHTML() {
+    const now = Date.now();
+    const ev = MACRO_CAL.filter((e) => e.t + 3600000 > now).slice(0, 6);
+    return '<section><h3>事件日曆</h3>' + (ev.length ? '<div class="list lyr">' + ev.map((e) => '<div class="row"><div class="row-main"><span>' + esc(fYMD(e.t) + ' ' + fHM(e.t)) + '</span><span class="sub">' + esc(e.name) + '<br>' + esc(calSrc(e.name)) + '</span></div></div>').join('') + '</div>' : '<div class="empty">日曆已過期，需要更新。</div>') +
+      '<p class="say">待確認（找不到官方日期，不列入暫停）：' + esc(CAL_TBD.join('、')) + '。</p><p class="say">每週檢查：事實（數據公布值、官方公告）和市場猜測（「預期會降息」）分開看；事件不一定是利多，團隊不會在沒有證據時預測價格反應，只在公布前 30 分鐘到後 1 小時暫停進場。</p></section>';
+  }
   function viewTeam() {
     const rg = TS.regime;
     const dirTxt = rg ? (rg.dir === 'up' ? '大盤偏多' : rg.dir === 'down' ? '大盤偏空' : '大盤盤整') : '判斷中';
@@ -5034,7 +5375,13 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       ['金融助理：市場研究員 → 板塊輪動', '前 50 大幣分 8 個板塊跟比特幣比強弱；先掃強勢板塊，弱勢板塊買漲、強勢板塊買跌減碼'],
       ['金融助理：論點追蹤', '進場時記下成立的理由；其中兩項變了（或出現重大壞消息）就提早出場'],
       ['金融助理：會前準備 → 今日簡報', '每天整理大方向、重大數據、強弱板塊、昨天成績和今天的打算'],
-      ['金融助理：月結與稽核 → 週報', '每週結算哪種訊號、板塊、條件賺錢；每次都核對帳務']
+      ['金融助理：月結與稽核 → 週報', '每週結算哪種訊號、板塊、條件賺錢；每次都核對帳務'],
+      ['研究提示詞：反方審查員', '每筆進場前列出反對理由；找到 3 個以上就不做，理由記進團隊筆記'],
+      ['研究提示詞：技術分析師', '日線週線的均線、支撐壓力、三種情境；下單時檢查前方 1R 內有沒有擋路的高低點；太近、而且過去這類單平均賠錢就減碼'],
+      ['研究提示詞：回測可信度', '時光機切成前 70% 和最近 30%，前面賺最近賠就當作過度擬合，降成 C 級'],
+      ['研究提示詞：交易教練', '檢討你最近 20 筆，分清楚紀錄證明的事和推測，訂 3 條規則並追蹤遵守率'],
+      ['研究提示詞：風險管理', '比特幣跌 20% 的壓力測試、集中度、跟比特幣的連動，比較調整方案'],
+      ['研究提示詞：資料查核、事件日曆', '每份資料分成已核實、待核實、有誤；重大數據排到 2027 年底，找不到的日期標待確認']
     ].map((x) => '<div class="row"><div class="row-main"><div><b>' + x[0] + '</b><div class="sub">' + x[1] + '</div></div></div></div>').join('') + '</div><p class="say">防守規則一定遵守；其他條件都交給團隊自己學：在加密貨幣有效就變成偏好，沒效就變成避開。</p></section>';
     const fgNow = MD.fg.length ? MD.fg[MD.fg.length - 1].v : null;
     const fgTxt = fgNow == null ? '' : '恐懼貪婪 ' + fgNow + '（' + (fgNow < 25 ? '極度恐懼' : fgNow < 45 ? '恐懼' : fgNow <= 55 ? '中性' : fgNow <= 75 ? '貪婪' : '極度貪婪') + '）';
@@ -5065,7 +5412,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       '<div class="sub" style="margin-top:10px">團隊最多動用你總資產的 ' + tp * 100 + '%（' + fU(bd.alloc) + ' USDT），已用 ' + fU(bd.used) + '。你委託的單用你自己的每筆金額，不佔額度。</div>' +
       '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做，網頁開著才會運作</span></span><i class="sw"></i></button></div></div>' +
       '<h3 style="margin-top:22px">團隊手上的單</h3>' + (tRows ? '<div class="list">' + tRows + '</div>' : '<div class="empty">目前沒有。</div>') + '</section>' +
-      layersHTML + sectorHTML() + exHTML + guardHTML + newsHTML() +
+      layersHTML + calHTML() + sectorHTML() + taHTML() + exHTML + guardHTML + newsHTML() +
       '<section><h3>資金控制</h3><div class="big">' + (sz.risk * 100).toFixed(2) + '%<small>下一筆的基本風險</small></div><div class="sub">約 ' + fU(bd.alloc * sz.risk) + ' USDT：停損打到時大約賠這麼多。' + esc(sz.notes.join('，')) + '。實際下單時再依這筆的把握度乘 0.7～1.3 倍。</div>' + riskSvg(J) + '</section>' +
       '<section><h3>判斷準確率</h3><div class="acc"><div><label>最近 20 筆</label>' + accCell(acc.recent) + '</div><div><label>再之前 20 筆</label>' + accCell(acc.before) + '</div><div><label>全部</label>' + accCell(acc.all) + '</div></div>' + (acc.recent.n && acc.before.n ? '<p class="say">' + (acc.recent.avg > acc.before.avg ? '最近比之前做得好，學到的守則有效。' : acc.recent.avg < acc.before.avg ? '最近比之前差，團隊會自動減碼，並繼續修正守則。' : '跟之前差不多。') + '</p>' : '') + '</section>' + weekHTML() +
       '<section><h3>訊號獵人　前 ' + S.coins.length + ' 大幣</h3>' + (sigs.length ? '<div class="list">' + sigs.map(sigRow).join('') + '</div>' : '<div class="empty">目前沒有值得做的訊號。團隊每分鐘掃描一次' + (TS.cGrade ? '；另有 ' + TS.cGrade + ' 個訊號被團隊判斷為不值得做。' : '。') + '</div>') + '<div class="sub" style="margin-top:8px">右邊是團隊依照回測和自己的實戰紀錄，預估這筆平均能賺幾 R。大於 +0.10R 才會做。</div></section>' +
@@ -5073,7 +5420,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       '<section><h3>團隊守則</h3>' + (avoid.length || prefer.length ? (avoid.length ? '<h4 class="rh">避開</h4><div class="list">' + ruleRows(avoid) + '</div>' : '') + (prefer.length ? '<h4 class="rh">偏好</h4><div class="list">' + ruleRows(prefer) + '</div>' : '') : '<div class="empty">' + (TS.kb ? '目前沒有明顯該避開或偏好的情況。' : '時光機讀完資料後會先從歷史訂出守則，之後每做一筆就修正一次。') + '</div>') + '<div class="sub" style="margin-top:8px">守則從回測和團隊自己的實戰紀錄算出來，實戰的一筆算三份樣本。至少 15 份樣本才會訂守則。</div></section>' +
       '<section><h3>時光機　前 ' + S.coins.length + ' 大幣、過去 14 天</h3>' + (keys.length ? '<div class="list">' + keys.map(keyRow).join('') + '</div><div class="sub" style="margin-top:8px">每種訊號都照同一套規則回測：停損 1R，賺 1R 移到打平，賺 1.5R 後停損跟著最近 6 根移動，停利上限 4R，最多抱 4 小時，已扣手續費。</div>' : '<div class="empty">' + (TS.loading ? '讀取中　' + TS.loaded + ' / ' + TS.total : '等行情連上後開始回測') + '</div>') + '</section>' +
       '<section><h3>風控長　只看你自己的單</h3><div class="list"><div class="row"><div class="row-main"><span>你今天的損益</span><b class="' + cls(rk.sum) + '">' + fPct(rk.sum) + '</b></div></div><div class="row"><div class="row-main"><span>單日虧損上限</span><b>' + (rk.lim * 100).toFixed(0) + '%</b></div></div><div class="row"><div class="row-main"><span>目前連賠</span><b>' + rk.streak + ' 筆</b></div></div></div><p class="say">' + esc(rk.verdict) + '</p></section>' +
-      compareHTML() + brainHTML +
+      stressHTML() + coachHTML() + dataHTML() + compareHTML() + brainHTML +
       '<p class="say note2">團隊看 K 線、成交量、資金費率、未平倉量、恐懼貪婪指數、新聞和板塊強弱，也只能用你已經解鎖的功能（例如買跌要第 5 關過關）。它學的是「哪些情況比較容易成功」，不是預測未來；筆數少的時候，結果大多是運氣。</p></div>';
   }
   function sigSheet(s) {
@@ -5083,10 +5430,15 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const pct = (x) => (x * 100).toFixed(0) + '%';
     const can = s.side === 'long' || E.canShort(state);
     const parts = s.dec && s.dec.parts ? s.dec.parts : [];
+    const bc = brainCheck(s);
+    const con = bc.con || [];
+    const naL = Object.keys(s.f || {}).filter((k) => s.f[k] === 'na' && L.FEATS[k]).map((k) => L.FEATS[k].na);
+    const conHTML = '<h3 style="margin-top:20px">反方審查</h3>' + (bc.block ? '<p class="say down" style="margin-top:4px">' + esc(bc.block) + '</p>' : '') + (con.length ? '<div class="calc">' + con.map((x, i) => '<div><span>反對理由 ' + (i + 1) + '</span><b>' + esc(x) + '</b></div>').join('') + '</div>' : bc.block ? '' : '<p class="say" style="margin-top:4px">沒找到明顯的反對理由。</p>') + '<p class="say">3 個以上反對理由團隊就不做。這筆會失效的情況：價格碰到停損 ' + fP(s.plan.stop) + '，或進場理由裡有兩項翻轉。</p>';
+    const fawHTML = '<h3 style="margin-top:20px">事實・假設・待驗證</h3><div class="calc"><div><span>已知事實</span><b>' + esc(fT(s.barT + 5 * 60000)) + ' 收盤 ' + fP(s.plan.entry) + (res ? '；過去 14 天同樣訊號 ' + res.st.n + ' 次' : '') + '</b></div><div><span>假設</span><b>停損 1R、停利上限 4R、手續費每邊 0.1%、沒算滑價；重播用過去的波動</b></div><div><span>待驗證</span><b>' + esc([res && res.oos ? '樣本外：' + trustTxt(res) : '', naL.length ? '缺資料：' + naL.join('、') : '', '結果出來後寫進團隊筆記'].filter(Boolean).join('；')) + '</b></div></div>';
     openSheet('sig', '<div class="sub">' + esc(s.sym) + '　' + fT(s.barT + 5 * 60000) + ' 的 5 分 K 收盤</div><h2>' + esc(s.sym) + ' ' + SIDE[s.side] + '　' + Team.TYPES[s.type].name + (s.grade ? '<span class="grade g' + s.grade + '">' + s.grade + '</span>' : '') + '</h2><p class="say">' + esc(Team.TYPES[s.type].desc) + '。</p>' +
       '<h3 style="margin-top:20px">團隊判斷：' + (s.dec && s.dec.go ? '<span class="up">做</span>' : '<span class="down">不做</span>') + '</h3><p class="say" style="margin-top:4px">' + esc(s.dec ? s.dec.why : '') + '</p>' +
       (parts.length ? '<div class="calc">' + parts.map((x) => '<div><span>' + L.FEATS[x.fk][x.val] + '<small class="pn">　' + Math.round(x.n) + ' 份樣本' + (x.live ? '・實戰 ' + x.live : '') + '</small></span><b class="' + cls(x.est) + '">' + L.fmtR(x.est) + '</b></div>').join('') + '</div>' : '') +
-      '<h3 style="margin-top:20px">出場計畫</h3><div class="calc"><div><span>進場</span><b>' + fP(p.entry) + '</b></div><div><span>停損（1R）</span><b class="down">' + fP(p.stop) + '　' + fPct((p.stop - p.entry) / p.entry) + '</b></div><div><span>停利上限（4R）</span><b class="up">' + fP(p.target) + '　' + fPct((p.target - p.entry) / p.entry) + '</b></div><div><span>移動停損</span><b>賺 1R 移到打平，賺 1.5R 後跟著最近 6 根' + (s.side === 'long' ? '低點' : '高點') + '</b></div><div><span>最長持有</span><b>4 小時</b></div></div>' +
+      conHTML + fawHTML + '<h3 style="margin-top:20px">出場計畫</h3><div class="calc"><div><span>進場</span><b>' + fP(p.entry) + '</b></div><div><span>停損（1R）</span><b class="down">' + fP(p.stop) + '　' + fPct((p.stop - p.entry) / p.entry) + '</b></div><div><span>停利上限（4R）</span><b class="up">' + fP(p.target) + '　' + fPct((p.target - p.entry) / p.entry) + '</b></div><div><span>移動停損</span><b>賺 1R 移到打平，賺 1.5R 後跟著最近 6 根' + (s.side === 'long' ? '低點' : '高點') + '</b></div><div><span>最長持有</span><b>4 小時</b></div></div>' +
       (rp ? '<h3 style="margin-top:20px">時光機：重播一萬次</h3><div class="odds"><div style="width:' + pct(rp.pTarget) + '" class="o-up"></div><div style="width:' + pct(rp.pNone) + '" class="o-mid"></div><div style="width:' + pct(rp.pStop) + '" class="o-down"></div></div><div class="calc"><div><span>碰到停利上限</span><b class="up">' + pct(rp.pTarget) + '</b></div><div><span>停損或移動停損出場</span><b class="down">' + pct(rp.pStop) + '</b></div><div><span>4 小時內都沒到</span><b>' + pct(rp.pNone) + '</b></div><div><span>平均結果（已扣手續費）</span><b class="' + cls(rp.avgR) + '">' + fR(rp.avgR) + '</b></div></div>' : '') +
       (res ? '<h3 style="margin-top:20px">過去 14 天同樣的訊號</h3><div class="calc"><div><span>出現次數</span><b>' + res.st.n + ' 次</b></div><div><span>勝率</span><b>' + (res.st.n ? Math.round(res.st.wr * 100) + '%' : '—') + '</b></div><div><span>平均每次</span><b class="' + cls(res.st.avgR) + '">' + (res.st.n ? fR(res.st.avgR) : '—') + '</b></div></div>' : '') +
       '<p class="say" style="margin-top:14px">這是模擬，不是預測。「我自己照計畫做」由你管這筆單；「交給團隊做」由團隊管出場，並寫進團隊筆記。</p>' +
@@ -5097,9 +5449,12 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     const syms = Object.keys(res.per).filter((s) => res.per[s] > 0).sort((a, b) => res.per[b] - res.per[a]);
     openSheet('info', '<h2>' + Team.TYPES[res.type].name + ' ' + SIDE[res.side] + '<span class="grade g' + res.grade + '">' + res.grade + '</span></h2><p class="say">' + esc(Team.TYPES[res.type].desc) + '。</p>' +
       '<div class="calc"><div><span>過去 14 天出現</span><b>' + st.n + ' 次</b></div><div><span>勝率</span><b>' + (st.n ? Math.round(st.wr * 100) + '%' : '—') + '</b></div><div><span>平均每次</span><b class="' + cls(st.avgR) + '">' + (st.n ? fR(st.avgR) : '—') + '</b></div><div><span>最慘連賠</span><b>' + st.maxLoss + ' 次</b></div>' +
+      '<div><span>獲利因子（賺的 R ÷ 賠的 R）</span><b>' + (st.pf == null ? '—' : st.pf === Infinity ? '沒賠過' : st.pf.toFixed(2)) + '</b></div>' +
+      (res.dd != null ? '<div><span>照時間順序做的最大回撤</span><b class="down">' + fR(-res.dd) + '</b></div>' : '') +
+      (res.ins ? '<div><span>前 70% 時間（樣本內）</span><b class="' + cls(res.ins.avgR) + '">' + (res.ins.n ? fR(res.ins.avgR) + '　' + res.ins.n + ' 次' : '—') + '</b></div><div><span>最近 30% 時間（樣本外）</span><b class="' + cls(res.oos.avgR) + '">' + (res.oos.n ? fR(res.oos.avgR) + '　' + res.oos.n + ' 次' : '—') + '</b></div><div><span style="white-space:nowrap">可信度</span><b class="' + (res.ovf ? 'down' : '') + '">' + esc(trustTxt(res)) + '</b></div>' : '') +
       (mc ? '<div><span>照做 50 次：中間情況</span><b class="' + cls(mc.p50) + '">' + fR(mc.p50) + '</b></div><div><span>最差 5% / 最好 5%</span><b>' + fR(mc.p5) + ' / ' + fR(mc.p95) + '</b></div><div><span>50 次後還是賠錢的機率</span><b>' + Math.round((1 - mc.pWin) * 100) + '%</b></div><div><span>過程中一般會先回落</span><b>' + fR(-mc.ddMed) + '</b></div>' : '') + '</div>' +
       (syms.length ? '<p class="say" style="margin-top:14px">出現最多的幣：' + syms.slice(0, 5).map((s) => esc(s) + ' ' + res.per[s] + ' 次').join('、') + '</p>' : '') +
-      '<p class="say">評級標準（只用回測，團隊實際下單看的是「團隊預估」）：A 級要出現 20 次以上、平均至少 +0.15R、做 50 次後賺錢的機率八成以上；B 級要 12 次以上、平均至少 +0.05R、機率六成五以上。其他都是 C 級，不列入訊號。</p>' +
+      '<p class="say">評級標準（只用回測，團隊實際下單看的是「團隊預估」）：A 級要出現 20 次以上、平均至少 +0.15R、做 50 次後賺錢的機率八成以上；B 級要 12 次以上、平均至少 +0.05R、機率六成五以上。其他都是 C 級，不列入訊號。另外會把 14 天切成前 70% 和最近 30%：前面賺、最近反而賠（而且最近至少 5 次）就當作可能過度擬合，直接降成 C 級。前視偏誤：每次判斷只用當根收盤以前的資料，進場價用收盤價；已扣手續費，沒算滑價。</p>' +
       '<div class="cta"><button class="btn solid" data-act="x">知道了</button></div>');
   }
   function teamAct(act, id) {
@@ -5125,6 +5480,9 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
     if (act === 'tresume') { TS.halt = false; TS.resumeAt = Date.now(); teamLog('你恢復了團隊交易，回落從現在重新計算'); saveTeam(); toast('團隊恢復交易'); refreshTeam(); return true; }
     if (act === 'dcancel') { TS.delegs = TS.delegs.filter((d) => d.id !== id); teamLog('取消委託'); saveTeam(); toast('委託已取消'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); return true; }
     if (act === 'judge') { state.settings.judge = id === 'team' ? 'team' : 'me'; save(); renderBar(); toast(id === 'team' ? '交給團隊：按買漲買跌會委託團隊判斷進場' : '自己判斷：按了馬上成交'); return true; }
+    if (act === 'tare') { delete TA.cache[state.settings.sym]; refreshTeam(); return true; }
+    if (act === 'coachUse') { const now = Date.now(); TS.coach = { rules: coachRun().picks.map((k) => ({ k, t: now })) }; saveTeam(); refreshTeam(); toast('已採用 3 條規則，之後每筆都會檢查'); return true; }
+    if (act === 'coachNew') { TS.coach = { rules: [] }; saveTeam(); refreshTeam(); return true; }
     if (act === 'sview') { if (['all', 'me', 'team'].includes(id)) { state.settings.statsView = id; save(); render(); } return true; }
     return false;
   }
@@ -5187,7 +5545,7 @@ if (typeof module !== 'undefined') module.exports = { LESSONS, GLOSSARY };
       if (S.mode === 'live' && Live.ws && Live.ws.readyState === 1 && S.hiddenAt && Date.now() - S.hiddenAt > 90000) onLiveReady(S.hiddenAt, false);
     });
     window.addEventListener('pagehide', save);
-    window.__shidan = { S, G, get state() { return state; }, E, tick: onTick, draw: drawChart, TS, createDeleg, addSignal, teamScan, teamManage, learnRebuild, learnFromClosed, MD, guard, extAt, NW, sectors, SEC, thesisNow, thesisCheck, auditRun, rollWeeks, brainCheck };
+    window.__shidan = { S, G, get state() { return state; }, E, tick: onTick, draw: drawChart, TS, createDeleg, addSignal, teamScan, teamManage, learnRebuild, learnFromClosed, MD, guard, extAt, NW, sectors, SEC, thesisNow, thesisCheck, auditRun, rollWeeks, brainCheck, TA, taAnalyze, coachRun, dataCheck, stressOf, betaOf, evalSamples };
   }
   boot();
 })();
