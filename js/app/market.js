@@ -109,8 +109,8 @@ function parseKlines(rows) {
 const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
 let CLK = null;
 const TOPN = 100;
-const MIN_QV = 10e6;
-const MIN_N = 30;
+const MIN_QV = 3e6;
+const MIN_N = 50;
 const STOCKS = new Set(['NVDAB', 'SOXLB', 'TSLAB', 'AAPLB', 'MSTRB', 'COINB', 'GOOGLB', 'GOOGB', 'AMZNB', 'METAB', 'SPYB', 'QQQB', 'HOODB', 'CRCLB', 'MSFTB', 'AMDB', 'PLTRB', 'NFLXB', 'INTCB', 'ORCLB', 'UBERB', 'SHOPB', 'PYPLB', 'BABAB', 'GMEB', 'AMCB', 'DISB', 'JPMB', 'WMTB', 'COSTB', 'AVGOB', 'TSMB', 'ARMB', 'SMCIB', 'MUB', 'TQQQB', 'SQQQB', 'IWMB', 'GLDB', 'SLVB', 'USOB', 'IBITB', 'CONLB', 'NVDLB', 'TSLLB', 'MSTUB']);
 const CGKEY = 'gaoqian.cg3';
 const CRYPTO_B = new Set(['BNB', 'ARB', 'TRB', 'BB', 'AB', 'SB', 'XAB', 'MDB', 'TNB', 'KNCB']);
