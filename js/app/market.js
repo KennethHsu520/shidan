@@ -108,9 +108,11 @@ function parseKlines(rows) {
 }
 const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
 let CLK = null;
-const TOPN = 50;
+const TOPN = 100;
+const MIN_QV = 10e6;
+const MIN_N = 30;
 const STOCKS = new Set(['NVDAB', 'SOXLB', 'TSLAB', 'AAPLB', 'MSTRB', 'COINB', 'GOOGLB', 'GOOGB', 'AMZNB', 'METAB', 'SPYB', 'QQQB', 'HOODB', 'CRCLB', 'MSFTB', 'AMDB', 'PLTRB', 'NFLXB', 'INTCB', 'ORCLB', 'UBERB', 'SHOPB', 'PYPLB', 'BABAB', 'GMEB', 'AMCB', 'DISB', 'JPMB', 'WMTB', 'COSTB', 'AVGOB', 'TSMB', 'ARMB', 'SMCIB', 'MUB', 'TQQQB', 'SQQQB', 'IWMB', 'GLDB', 'SLVB', 'USOB', 'IBITB', 'CONLB', 'NVDLB', 'TSLLB', 'MSTUB']);
-const CGKEY = 'gaoqian.cg2';
+const CGKEY = 'gaoqian.cg3';
 const CRYPTO_B = new Set(['BNB', 'ARB', 'TRB', 'BB', 'AB', 'SB', 'XAB', 'MDB', 'TNB', 'KNCB']);
 const NOT_CRYPTO = /tokeni[sz]ed|stock|xstock|ondo .*(etf|fund)|wrapped|bridged|staked|liquid staking|gold|silver|treasury|t-bill|\bfund\b|\betf\b/i;
 async function cryptoSet() {
@@ -119,13 +121,19 @@ async function cryptoSet() {
     if (c && Date.now() - c.t < 24 * 3600000 && Array.isArray(c.ok) && c.ok.length > 100 && Array.isArray(c.bad)) return { ok: new Set(c.ok), bad: new Set(c.bad) };
   } catch (e) { S.cgErr = 1; }
   const ctl = new AbortController();
-  const tm = setTimeout(() => ctl.abort(), 7000);
+  const tm = setTimeout(() => ctl.abort(), 12000);
   try {
-    const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1', { signal: ctl.signal });
-    if (!res.ok) throw new Error('http');
-    const rows = await res.json();
+    const rows = [];
+    for (const pg of [1, 2]) {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=' + pg, { signal: ctl.signal });
+        if (!res.ok) throw new Error('http');
+        const r = await res.json();
+        if (Array.isArray(r)) rows.push(...r);
+      } catch (e) { if (pg === 1) throw e; }
+    }
     const ok = [], bad = [];
-    for (const x of Array.isArray(rows) ? rows : []) {
+    for (const x of rows) {
       if (!x || typeof x.symbol !== 'string') continue;
       const sym = x.symbol.toUpperCase();
       if (!E.SYM.test(sym)) continue;
@@ -160,7 +168,8 @@ async function fetchTop() {
     list.push({ base, qv, last, chg: open > 0 ? last / open - 1 : 0 });
   }
   list.sort((a, b) => b.qv - a.qv);
-  const top = list.slice(0, TOPN);
+  const deep = list.filter((x) => x.qv >= MIN_QV);
+  const top = (deep.length >= MIN_N ? deep : list).slice(0, deep.length >= MIN_N ? TOPN : MIN_N);
   if (top.length < 5) throw new Error('few');
   for (const x of top) { S.vol[x.base] = x.qv; S.chg[x.base] = x.chg; if (!(S.prices[x.base] > 0)) S.prices[x.base] = x.last; }
   S.coins = top.map((x) => x.base);

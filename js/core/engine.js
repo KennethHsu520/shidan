@@ -794,7 +794,7 @@ const Engine = (() => {
       statsView: ['all', 'me', 'team'].includes(st.statsView) ? st.statsView : 'all'
     };
     if (raw.coinCache && fin(raw.coinCache.t) && Array.isArray(raw.coinCache.list)) {
-      const list = raw.coinCache.list.filter((x) => typeof x === 'string' && SYM.test(x)).slice(0, 50);
+      const list = raw.coinCache.list.filter((x) => typeof x === 'string' && SYM.test(x)).slice(0, 100);
       if (list.length >= 5) s.coinCache = { t: raw.coinCache.t, list };
     }
     return s;

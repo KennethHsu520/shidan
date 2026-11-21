@@ -101,7 +101,7 @@ async function loadAllHistory() {
     for (const x of L.samplesFrom(k, dirAt, (t) => extAt(sym, t))) { x.sym = sym; samples.push(x); }
   };
   if (hist.BTC) take('BTC', hist.BTC);
-  await pool(coins.filter((c) => c !== 'BTC'), S.mode === 'sim' ? 1 : 4, async (sym) => {
+  await pool(coins.filter((c) => c !== 'BTC'), S.mode === 'sim' ? 1 : 6, async (sym) => {
     try { take(sym, await teamHistory(sym)); } catch (e) { failed++; }
     TS.loaded++;
     refreshTeam();
