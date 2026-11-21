@@ -56,7 +56,7 @@ function viewStats() {
     (state.rules ? '<section><h3>我的規則</h3><div class="list"><div class="row"><div class="row-main"><span>每筆最多賠</span><b>' + (state.rules.risk * 100).toFixed(0) + '%</b></div></div><div class="row"><div class="row-main"><span>一天最多賠</span><b>' + (state.rules.day * 100).toFixed(0) + '%</b></div></div><div class="row"><div class="row-main"><span>盈虧比最低</span><b>' + state.rules.rr + '</b></div></div></div></section>' : '') +
     '<section><h3>' + who + '的交易紀錄</h3>' + (T.length ? '<div class="list">' + T.slice(-40).reverse().map((t) => '<button class="row" data-act="trade" data-id="' + t.id + '"><div class="row-main"><div><b>' + esc(t.sym) + '</b>' + (t.owner === 'team' ? '<span class="tag who-t">' + (t.src === 'deleg' ? '委託團隊' : '團隊') + '</span>' : '') + '<span class="tag">' + (t.side === 'long' ? '買漲' : '買跌') + (t.lev > 1 ? ' ' + t.lev + 'x' : '') + '</span><div class="sub">' + fT(t.t1) + '　' + WHY[t.why] + '　' + (E.REASONS[t.reason] || '未選理由') + '</div></div><div class="right"><b class="' + cls(t.pnl) + '">' + fS(t.pnl) + '</b><div class="sub">' + fPct(t.pct) + (t.r != null ? '　' + fR(t.r) : '') + '</div></div></div></button>').join('') + '</div>' : '<div class="empty">還沒有完成的交易。</div>') + '</section>' +
     compareHTML() +
-    '<section><h3>設定</h3><div class="list"><button class="row" data-act="sync"><div class="row-main"><span>雲端同步（GitHub）</span><span class="sub">' + esc(syncStatus()) + '</span></div></button><div class="row"><button class="toggle" role="switch" aria-checked="' + state.settings.twColors + '" data-act="tw"><span>紅漲綠跌<span class="sub" style="display:block">台股的習慣。預設是綠漲紅跌。</span></span><i class="sw"></i></button></div><div class="row"><div class="row-main"><span>行情來源</span><span class="sub">' + (S.mode === 'live' ? '幣安公開行情（即時）' : S.mode === 'sim' ? '系統模擬（練習用）' : '連線中') + '</span></div></div><div class="row"><div class="row-main"><span>幣種</span><span class="sub">當日成交額前 100 名、成交額 300 萬美元以上的加密貨幣（至少 50 個）</span></div></div><div class="row"><div class="row-main"><span>匯率</span><span class="sub">固定以 1 USDT ≈ ' + TWD + ' 台幣估算</span></div></div><div class="row"><button class="toggle" data-act="reset"><span style="color:var(--down)">清除全部資料，從頭開始</span><i class="chev"></i></button></div></div></section>'
+    '<section><h3>設定</h3><div class="list"><button class="row" data-act="sync"><div class="row-main"><span>雲端同步（GitHub）</span><span class="sub">' + esc(syncStatus()) + '</span></div></button><div class="row"><button class="toggle" role="switch" aria-checked="' + state.settings.twColors + '" data-act="tw"><span>紅漲綠跌<span class="sub" style="display:block">台股的習慣。預設是綠漲紅跌。</span></span><i class="sw"></i></button></div><div class="row"><div class="row-main"><span>行情來源</span><span class="sub">' + (S.mode === 'live' ? '幣安公開行情（即時）' : S.mode === 'sim' ? '系統模擬（練習用）' : '連線中') + '</span></div></div><div class="row"><div class="row-main"><span>幣種</span><span class="sub">24 小時成交額 100 萬美元以上的加密貨幣（最多 250 個、至少 50 個）</span></div></div><div class="row"><div class="row-main"><span>匯率</span><span class="sub">固定以 1 USDT ≈ ' + TWD + ' 台幣估算</span></div></div><div class="row"><button class="toggle" data-act="reset"><span style="color:var(--down)">清除全部資料，從頭開始</span><i class="chev"></i></button></div></div></section>'
   );
 }
 function drawSpark() {
@@ -161,15 +161,27 @@ function holdInfo(s) {
   if (D.length) parts.push('<span class="who">委託團隊</span><span class="hold-side ' + (D[0].side === 'long' ? 'up' : 'down') + '">' + SIDE[D[0].side] + '</span>等進場　剩 ' + fLeft(D[0].until - Date.now()));
   return '<span class="hold">' + parts.join('　') + '</span>';
 }
+const COIN_CACHE = { key: '', t: 0, html: '' };
+const coinQ = () => (typeof S.coinQ === 'string' ? S.coinQ : '');
 function coinRows() {
   const held = Array.from(new Set(state.positions.map((p) => p.sym).concat(state.orders.map((o) => o.sym), TS.delegs.map((d) => d.sym))));
-  const list = S.coins.slice();
-  for (const s of held.concat([state.settings.sym])) if (!list.includes(s)) list.push(s);
-  return list.map((s) => {
+  const q = coinQ();
+  const key = q + '|' + state.settings.sym + '|' + held.join(',') + '|' + S.coins.length + '|' + S.coins[0];
+  const now = Date.now();
+  if (COIN_CACHE.key === key && now - COIN_CACHE.t < 1000) return COIN_CACHE.html;
+  const seen = new Set();
+  const list = [];
+  for (const s of held.concat(S.coins, [state.settings.sym])) if (!seen.has(s)) { seen.add(s); list.push(s); }
+  const shown = q ? list.filter((s) => s.indexOf(q) >= 0).sort((a, b) => (b.indexOf(q) === 0) - (a.indexOf(q) === 0)) : list;
+  if (!shown.length) { COIN_CACHE.key = key; COIN_CACHE.t = now; COIN_CACHE.html = '<div class="empty">找不到「' + esc(q) + '」。團隊只看 24 小時成交額 100 萬美元以上的幣。</div>'; return COIN_CACHE.html; }
+  COIN_CACHE.key = key; COIN_CACHE.t = now;
+  COIN_CACHE.html = shown.map((s) => {
     const h = holdInfo(s);
     return '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + (h ? ' held' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small>' + h + '</span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>';
   }).join('');
+  return COIN_CACHE.html;
 }
+const coinSearch = (id) => '<div class="coinq"><input id="' + id + '" type="search" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="15" placeholder="搜尋幣種，例如 SOL" value="' + esc(coinQ()) + '" aria-label="搜尋幣種"></div>';
 function coinsHead() {
   const held = new Set(state.positions.map((p) => p.sym));
   const ords = state.orders.length;
@@ -180,8 +192,8 @@ function coinsHead() {
   return '<div class="hold-sum">持倉中 <b>' + held.size + '</b> 個幣' + (ords ? '　掛單 <b>' + ords + '</b> 張' : '') + (dl ? '　委託團隊 <b>' + dl + '</b> 個' : '') + (held.size ? '　未實現 <b class="' + cls(pnl) + '">' + fS(pnl) + '</b>' : '') + '</div>';
 }
 function renderCoins(soft) {
-  if (soft) { patch($('.coins-list'), coinRows()); patch($('#coinsHead'), coinsHead()); return; }
-  openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '當日成交額前 ' + S.coins.length + ' 名加密貨幣，排除穩定幣與股票代幣，每 30 分鐘更新') + '</div><div id="coinsHead">' + coinsHead() + '</div><div class="list coins-list">' + coinRows() + '</div><div class="cta"><button class="btn quiet" data-act="x">關閉</button></div>');
+  if (soft) { const el = $('.coins-list'), h = coinRows(); if (el && el.__h !== h) { patch(el, h); el.__h = h; } patch($('#coinsHead'), coinsHead()); return; }
+  openSheet('coins', '<h2>選擇幣種</h2><div class="sub">' + (S.mode === 'sim' ? '練習行情：固定 10 種幣' : '24 小時成交額 100 萬美元以上的加密貨幣共 ' + S.coins.length + ' 個，團隊每 5 分鐘全部檢查一次；排除穩定幣與股票代幣，每 30 分鐘更新') + '</div>' + (S.mode === 'sim' ? '' : coinSearch('coinQ')) + '<div id="coinsHead">' + coinsHead() + '</div><div class="list coins-list">' + coinRows() + '</div><div class="cta"><button class="btn quiet" data-act="x">關閉</button></div>');
 }
 function renderBook(soft) {
   const html = '<h2>持倉與掛單</h2>' + bookBody() +

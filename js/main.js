@@ -20,6 +20,14 @@ async function boot() {
       if (btn && !btn.disabled) { e.preventDefault(); btn.click(); }
     }
   });
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!el || (el.id !== 'coinQ' && el.id !== 'coinQs')) return;
+    const v = String(el.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+    S.coinQ = v;
+    if (S.sheetKind === 'coins') renderCoins(true);
+    if (S.view === 'trade') renderSide();
+  });
   $('#sheet .backdrop').addEventListener('click', () => closeSheet());
   $$('.tabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.dataset.v); }));
   $('#rankPill').addEventListener('click', () => go('learn'));

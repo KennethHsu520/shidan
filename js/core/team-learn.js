@@ -17,6 +17,7 @@ const TeamLearn = (() => {
     deriv: { crowd: '多頭擁擠（漲、未平倉增、費率高）', flush: '槓桿被洗掉（跌、未平倉減）', squeeze: '軋空機會（費率深度為負、不再破底）', cover: '空單回補（漲、未平倉減）', normal: '期貨市場正常', na: '沒有期貨資料' },
     dom: { up: '比特幣市佔率上升（山寨偏弱）', down: '比特幣市佔率下降（山寨偏強）', flat: '比特幣市佔率持平', na: '沒有市佔率資料' },
     sect: { with: '順板塊強弱（強勢板塊買漲、弱勢板塊買跌）', against: '逆板塊強弱', mid: '板塊強弱普通', na: '沒有板塊資料' },
+    liq: { big: '大幣（24 小時成交額 5,000 萬美元以上）', mid: '中型幣（成交額 1,000 萬～5,000 萬美元）', small: '小幣（成交額不到 1,000 萬美元）', na: '沒有成交額資料' },
     room: { tight: '前方 1R 內就有擋路的高低點（空間小）', mid: '離前方高低點 1～2.5R', open: '前方 2.5R 內沒有擋路的高低點', na: '沒有空間資料' }
   };
   const EVWIN = { hack: 72, rug: 72, fraud: 72, halt: 72, delist: 168, sue: 24, depeg: 24 };
@@ -128,6 +129,19 @@ const TeamLearn = (() => {
     if (pxChg > 0.01 && oiChg < -0.03) return 'cover';
     return 'normal';
   }
+  const LIQ_BIG = 50e6, LIQ_MID = 10e6;
+  function liqAt(k, i) {
+    if (!k || i == null || i < 0 || i >= k.length) return null;
+    const n = Math.min(288, i + 1);
+    if (n < 24) return null;
+    let s = 0;
+    for (let j = i - n + 1; j <= i; j++) s += k[j].v * k[j].c;
+    return (s * 288) / n;
+  }
+  function liqTier(k, i) {
+    const q = liqAt(k, i == null && k ? k.length - 1 : i);
+    return q == null ? 'na' : q >= LIQ_BIG ? 'big' : q >= LIQ_MID ? 'mid' : 'small';
+  }
   function features(ind, k, i, side, dir, volx, ext, p) {
     const r = ind.rsi[i];
     const vx = volx != null ? volx : ind.vavg[i] > 0 ? k[i].v / ind.vavg[i] : 1;
@@ -152,6 +166,7 @@ const TeamLearn = (() => {
       deriv: derivState(x.fund, x.oiChg, pxChg, ind, i),
       dom: x.dom || 'na',
       sect: x.sect == null ? 'na' : x.sect === 'mid' ? 'mid' : (x.sect === 'strong') === (side === 'long') ? 'with' : 'against',
+      liq: liqTier(k, i),
       room: (() => { const rr = p ? T.roomR(k, i, side, p.dist) : null; return rr == null ? 'na' : rr < 1 ? 'tight' : rr < 2.5 ? 'mid' : 'open'; })()
     };
   }
@@ -309,6 +324,6 @@ const TeamLearn = (() => {
     }
     return { n, hit, rate: n ? hit / n : null };
   }
-  return { EVWIN, derivState, newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, accuracy, fmtR };
+  return { LIQ_BIG, LIQ_MID, liqAt, liqTier, EVWIN, derivState, newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, accuracy, fmtR };
 })();
 if (typeof module !== 'undefined') module.exports.Learn = TeamLearn;

@@ -206,6 +206,9 @@ function addSignal(sym, s, k) {
   if (ex.on && ex.open < EXPLORE_OPEN) { sig.explore = true; teamTrade(sig, 'auto', true); return; }
   if (!ex.on && ex.open < 2 && !(dec.avoid && dec.avoid.length) && dec.est != null && dec.est > -0.15 && Math.random() < 0.2) { sig.explore = true; teamTrade(sig, 'auto', true); }
 }
+const SMALL_MULT = 0.5;
+const SMALL_NOTE = '小幣滑價大，風險減半';
+const smallCoin = (sig) => !!(sig && sig.f && sig.f.liq === 'small');
 const EXPLORE_N = 30;
 const EXPLORE_OPEN = 6;
 const EXPLORE_RISK = 0.0025;
@@ -236,9 +239,11 @@ function teamTrade(sig, mode, explore) {
     sig.con = bc.con || [];
     if (bc.block) { sig.block = bc.block; return false; }
     if (sig.sym !== 'BTC' && g.btc > RISK.shock) { sig.block = '比特幣 15 分鐘內動了 ' + (g.btc * 100).toFixed(1) + '%，小幣先不進場'; return false; }
+    const small = smallCoin(sig);
+    if (small && sig.grade !== 'A' && sig.grade !== 'B') { sig.block = '小幣（24 小時成交額不到 1,000 萬美元）只做 A、B 級訊號'; return false; }
     if (ask) {
-      const mult = Math.max(0.25, g.mult * bc.mult);
-      notes = mult < 1 ? g.notes.concat(bc.notes) : [];
+      const mult = Math.max(0.25, g.mult * bc.mult) * (small ? SMALL_MULT : 1);
+      notes = mult < 1 ? g.notes.concat(bc.notes, small ? [SMALL_NOTE] : []) : [];
       amount = Math.floor(Math.min(orderAmount().amount * mult, E.maxAmount(state.cash, 1, sig.side)) * 100) / 100;
     } else {
       if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
@@ -248,6 +253,7 @@ function teamTrade(sig, mode, explore) {
       }
       if (g.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * g.mult); notes = notes.concat(g.notes); }
       if (bc.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * bc.mult); notes = notes.concat(bc.notes); }
+      if (small) { risk *= SMALL_MULT; notes = notes.concat([SMALL_NOTE]); }
       const add = b.alloc * risk;
       if (g.open + add > RISK.open * b.alloc + 1e-9) { sig.block = '團隊同時承擔的風險已到額度的 5%'; return false; }
       if (g.side[sig.side] + add > RISK.side * b.alloc + 1e-9) { sig.block = '同方向（' + SIDE[sig.side] + '）的風險已到額度的 3%，幣跟幣會一起漲跌'; return false; }

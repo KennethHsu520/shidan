@@ -105,7 +105,7 @@ function crossAct(act, side) {
 
 const WIDE = window.matchMedia ? window.matchMedia('(min-width: 1024px)') : { matches: false, addEventListener() {} };
 const XL = window.matchMedia ? window.matchMedia('(min-width: 1680px)') : { matches: false, addEventListener() {} };
-const coinsBox = () => '<div class="sidebox"><h3>幣種　前 ' + S.coins.length + ' 大</h3><div id="sideHead">' + coinsHead() + '</div><div class="list side-coins">' + coinRows() + '</div></div>';
+const coinsBox = () => '<div class="sidebox"><h3>幣種　' + S.coins.length + ' 個</h3>' + coinSearch('coinQs') + '<div id="sideHead">' + coinsHead() + '</div><div class="list side-coins">' + coinRows() + '</div></div>';
 function sideHTML() {
   return '<div class="sidebox"><h3>持倉與掛單</h3>' + bookBody() + '</div>' + (XL.matches ? '' : coinsBox());
 }

@@ -87,12 +87,38 @@ const HOSTS = [
 ];
 const Live = { ws: null, host: 0, ok: false, last: 0, retry: 0, kSub: null, tSubs: new Set(), id: 1, tries: 0 };
 
+function makeRL(win, max) {
+  const q = [];
+  let sum = 0;
+  const rl = {
+    until: 0,
+    async take(n) {
+      for (;;) {
+        const now = Date.now();
+        while (q.length && now - q[0][0] >= win) sum -= q.shift()[1];
+        if (now < rl.until) { await sleep(Math.min(5000, rl.until - now)); continue; }
+        if (sum + n <= max || !q.length) { q.push([now, n]); sum += n; return; }
+        await sleep(Math.max(100, Math.min(5000, win - (now - q[0][0]) + 20)));
+      }
+    },
+    hit(res) {
+      if (res.status !== 429 && res.status !== 418) return;
+      const ra = +res.headers.get('Retry-After');
+      rl.until = Date.now() + (ra > 0 ? Math.min(ra, 600) * 1000 : 60000);
+    },
+    used() { const now = Date.now(); while (q.length && now - q[0][0] >= win) sum -= q.shift()[1]; return sum; }
+  };
+  return rl;
+}
+const RL_SPOT = makeRL(60000, 3600);
+const spotWeight = (path) => (path.startsWith('/api/v3/ticker/24hr') && path.indexOf('symbol=') < 0 ? 80 : 2);
 async function getJSON(path, ms) {
+  await RL_SPOT.take(spotWeight(path));
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), ms || 8000);
   try {
     const res = await fetch(HOSTS[Live.host].rest + path, { signal: ctl.signal });
-    if (!res.ok) throw new Error('http');
+    if (!res.ok) { RL_SPOT.hit(res); throw new Error('http'); }
     return await res.json();
   } finally { clearTimeout(tm); }
 }
@@ -108,9 +134,11 @@ function parseKlines(rows) {
 }
 const fetchKlines = async (sym, iv, extra) => parseKlines(await getJSON('/api/v3/klines?symbol=' + sym + 'USDT&interval=' + iv + (extra || '&limit=300')));
 let CLK = null;
-const TOPN = 100;
-const MIN_QV = 3e6;
+const TOPN = 250;
+const MIN_QV = 1e6;
 const MIN_N = 50;
+const WS_URL_MAX = 100;
+const WS_SUB_BATCH = 100;
 const STOCKS = new Set(['NVDAB', 'SOXLB', 'TSLAB', 'AAPLB', 'MSTRB', 'COINB', 'GOOGLB', 'GOOGB', 'AMZNB', 'METAB', 'SPYB', 'QQQB', 'HOODB', 'CRCLB', 'MSFTB', 'AMDB', 'PLTRB', 'NFLXB', 'INTCB', 'ORCLB', 'UBERB', 'SHOPB', 'PYPLB', 'BABAB', 'GMEB', 'AMCB', 'DISB', 'JPMB', 'WMTB', 'COSTB', 'AVGOB', 'TSMB', 'ARMB', 'SMCIB', 'MUB', 'TQQQB', 'SQQQB', 'IWMB', 'GLDB', 'SLVB', 'USOB', 'IBITB', 'CONLB', 'NVDLB', 'TSLLB', 'MSTUB']);
 const CGKEY = 'gaoqian.cg3';
 const CRYPTO_B = new Set(['BNB', 'ARB', 'TRB', 'BB', 'AB', 'SB', 'XAB', 'MDB', 'TNB', 'KNCB']);
@@ -121,16 +149,17 @@ async function cryptoSet() {
     if (c && Date.now() - c.t < 24 * 3600000 && Array.isArray(c.ok) && c.ok.length > 100 && Array.isArray(c.bad)) return { ok: new Set(c.ok), bad: new Set(c.bad) };
   } catch (e) { S.cgErr = 1; }
   const ctl = new AbortController();
-  const tm = setTimeout(() => ctl.abort(), 12000);
+  const tm = setTimeout(() => ctl.abort(), 25000);
   try {
     const rows = [];
-    for (const pg of [1, 2]) {
+    for (const pg of [1, 2, 3, 4]) {
       try {
+        if (pg > 1) await sleep(1500);
         const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=' + pg, { signal: ctl.signal });
         if (!res.ok) throw new Error('http');
         const r = await res.json();
         if (Array.isArray(r)) rows.push(...r);
-      } catch (e) { if (pg === 1) throw e; }
+      } catch (e) { if (pg === 1) throw e; break; }
     }
     const ok = [], bad = [];
     for (const x of rows) {
@@ -204,7 +233,22 @@ function syncTickers() {
   if (!ws || ws.readyState !== 1) return;
   const want = watchList().map((s) => s.toLowerCase() + 'usdt@miniTicker');
   const add = want.filter((n) => !Live.tSubs.has(n));
-  if (add.length && wsSend({ method: 'SUBSCRIBE', params: add })) for (const n of add) Live.tSubs.add(n);
+  if (!add.length || Live.subBusy) return;
+  Live.subBusy = true;
+  const batches = [];
+  for (let i = 0; i < add.length; i += WS_SUB_BATCH) batches.push(add.slice(i, i + WS_SUB_BATCH));
+  (async () => {
+    try {
+      for (const b of batches) {
+        if (Live.ws !== ws || ws.readyState !== 1) break;
+        if (wsSend({ method: 'SUBSCRIBE', params: b })) for (const n of b) Live.tSubs.add(n);
+        await sleep(400);
+      }
+    } finally {
+      Live.subBusy = false;
+      if (Live.ws && Live.ws !== ws) syncTickers();
+    }
+  })();
 }
 function connect() {
   let ws;
@@ -218,7 +262,7 @@ function connect() {
     Live.retry = Math.min(30000, (Live.retry || 2000) * 2);
     setTimeout(connect, Live.retry);
   };
-  const names = watchList().map((s) => s.toLowerCase() + 'usdt@miniTicker');
+  const names = watchList().map((s) => s.toLowerCase() + 'usdt@miniTicker').slice(0, WS_URL_MAX);
   try { ws = new WebSocket(host.ws + '/stream?streams=' + names.join('/')); } catch (e) { fail(); return; }
   let opened = false;
   const tm = setTimeout(() => { if (!opened) { try { ws.close(); } catch (e) { return; } } }, 5000);

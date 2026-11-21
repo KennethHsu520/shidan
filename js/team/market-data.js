@@ -1,12 +1,23 @@
 const BAR5 = 5 * 60000;
 const MD = { fund: {}, oi: {}, fg: [], fundNow: {}, fsym: {}, h1: {}, t: 0, loading: false, ok: { fund: null, oi: null, fg: null } };
 const FAPI = 'https://fapi.binance.com';
+const RL_FUND = makeRL(300000, 420);
+const RL_OI = makeRL(300000, 850);
+const RL_FAPI = makeRL(60000, 1800);
+function fapiRL(url) {
+  if (url.indexOf('fapi.binance.com') < 0) return null;
+  if (url.indexOf('/fapi/v1/fundingRate') >= 0) return [RL_FUND, 1];
+  if (url.indexOf('/futures/data/') >= 0) return [RL_OI, 1];
+  return [RL_FAPI, url.indexOf('/fapi/v1/premiumIndex') >= 0 && url.indexOf('symbol=') < 0 ? 10 : 1];
+}
 async function getAbs(url, ms) {
+  const rl = fapiRL(url);
+  if (rl) await rl[0].take(rl[1]);
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), ms || 8000);
   try {
     const res = await fetch(url, { signal: ctl.signal });
-    if (!res.ok) throw new Error('http');
+    if (!res.ok) { if (rl) rl[0].hit(res); throw new Error('http'); }
     return await res.json();
   } finally { clearTimeout(tm); }
 }
@@ -94,7 +105,7 @@ async function loadMarket(coins) {
       MD.ok.fg = MD.fg.length > 0;
     } catch (e) { MD.ok.fg = false; }
     let okO = 0;
-    await pool(coins, 5, async (c) => {
+    await pool(coins, 8, async (c) => {
       try {
         const d = h1Dir(await fetchKlines(c, '1h', '&limit=60'));
         if (d) MD.h1[c] = d;
