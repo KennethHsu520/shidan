@@ -21,6 +21,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: 檢查幣安連線
+        run: |
+          curl -s -o /dev/null -w "幣安現貨行情 %{http_code}\n" https://data-api.binance.vision/api/v3/ping || true
+          curl -s -o /dev/null -w "幣安期貨 %{http_code}\n" https://fapi.binance.com/fapi/v1/ping || true
       - name: 安裝瀏覽器控制工具
         run: npm install --no-save --no-audit --no-fund playwright-core@1.49.1
       - name: 讓團隊工作 50 分鐘
