@@ -154,7 +154,8 @@ function teamAct(act, id) {
   if (act === 'tpractice') { TS.practice = TS.practice === false; TS.practiceMiss = null; saveTeam(); refreshTeam(); toast(TS.practice ? '冷場練習單：開' : '冷場練習單：關'); return true; }
   if (act === 'tauto') { if (state.settings.teamPct <= 0) { toast('先把團隊額度設成大於 0%'); return true; } TS.auto = !TS.auto; saveTeam(); refreshTeam(); toast(TS.auto ? '團隊會用額度自己交易 A、B 級訊號' : '團隊只找訊號，不會自己交易'); return true; }
   if (act === 'tpct') { const v = parseFloat(id); if ([0, 0.1, 0.25, 0.5, 1].includes(v)) { state.settings.teamPct = v; save(); refreshTeam(); toast(v ? '團隊額度：總資產的 ' + v * 100 + '%' : '團隊額度 0%：團隊只找訊號'); } return true; }
-  if (act === 'takeover') { const p = state.positions.find((x) => x.id === parseFloat(id)); if (p) { p.owner = 'me'; delete p.until; p.src = null; save(); toast('這筆改由你管，停損停利線可以自己拖'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); } return true; }
+  if (act === 'handover') { handOver(parseFloat(id)); return true; }
+  if (act === 'takeover') { const p = state.positions.find((x) => x.id === parseFloat(id)); if (p) { p.owner = 'me'; delete p.until; delete p.hand; delete p.be; delete p.trail; delete p.fav; p.src = null; save(); if (S.view === 'trade') drawChart(); toast('這筆改由你管，停損停利線可以自己拖'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); } return true; }
   if (act === 'tresume') { TS.halt = false; TS.resumeAt = Date.now(); teamLog('你恢復了團隊交易，回落從現在重新計算'); saveTeam(); toast('團隊恢復交易'); refreshTeam(); return true; }
   if (act === 'dcancel') { TS.delegs = TS.delegs.filter((d) => d.id !== id); teamLog('取消委託'); saveTeam(); toast('委託已取消'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); return true; }
   if (act === 'judge') { state.settings.judge = id === 'team' ? 'team' : 'me'; save(); renderBar(); toast(id === 'team' ? '交給團隊：按「請團隊判斷」由團隊決定漲跌' : '自己判斷：按了馬上成交'); return true; }

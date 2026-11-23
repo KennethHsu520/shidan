@@ -20,18 +20,23 @@ const E = require('%s/js/core/engine.js');
 const out = {};
 const s = E.newState(Date.now());
 out.short10 = E.openPosition(s, { sym: 'BTC', side: 'short', lev: 10, amount: 100, price: 100, sl: 101, tp: 95, now: Date.now() }, { BTC: 100 }).ok;
-out.lev11 = E.openPosition(s, { sym: 'BTC', side: 'long', lev: 11, amount: 100, price: 100, now: Date.now() }, { BTC: 100 }).ok;
+out.lev11 = E.openPosition(s, { sym: 'BTC', side: 'long', lev: 126, amount: 100, price: 100, now: Date.now() }, { BTC: 100 }).ok;
+out.lev125 = E.openPosition(s, { sym: 'SOL', side: 'long', lev: 125, amount: 100, price: 100, sl: 99.8, now: Date.now() }, { SOL: 100 });
+out.lev125far = E.openPosition(s, { sym: 'XRP', side: 'long', lev: 125, amount: 100, price: 100, sl: 99, now: Date.now() }, { XRP: 100 }).ok;
 out.slRank1 = E.openPosition(s, { sym: 'ETH', side: 'long', lev: 1, amount: 50, price: 10, sl: 9, tp: 12, now: Date.now() }, { ETH: 10 }).ok;
 out.demote = E.checkDemotion(s, Date.now(), {});
 const s2 = E.sanitize(JSON.parse(JSON.stringify(Object.assign(s, { favs: ['BTC', 'bad sym', 'ETH'], alerts: [{ id: 99, sym: 'BTC', px: 100, dir: 'up', t: 1 }, { id: 'x' }] }))), Date.now());
-out.favs = s2.favs; out.alerts = s2.alerts.length; out.nextId = s2.nextId > 99;
+out.keep125 = s2.positions.some((p) => p.lev === 125); out.favs = s2.favs; out.alerts = s2.alerts.length; out.nextId = s2.nextId > 99;
 const eq0 = E.equity(s2, { BTC: 100, ETH: 10 });
 out.eqOk = Math.abs(eq0 - E.equity(s, { BTC: 100, ETH: 10 })) < 1e-9;
 console.log(JSON.stringify(out));
 """ % ROOT
     r = json.loads(subprocess.check_output(['node', '-e', js]).decode())
     check('引擎：買跌 10 倍可以下單', r['short10'])
-    check('引擎：超過 10 倍會擋下', not r['lev11'])
+    check('引擎：超過 125 倍會擋下', not r['lev11'])
+    check('引擎：125 倍可以下單，強平價正確', r['lev125']['ok'] and abs(r['lev125']['pos']['liq'] - 100 * (1 - 1/125 + 0.005)) < 1e-9, r['lev125'])
+    check('引擎：125 倍時停損比強平遠會擋下', not r['lev125far'])
+    check('引擎：125 倍持倉存回讀出還在', r['keep125'])
     check('引擎：段位 1 也能設停損停利', r['slRank1'])
     check('引擎：不會再強制降級平倉', r['demote'] is None)
     check('引擎：自選與提醒資料驗證', r['favs'] == ['BTC', 'ETH'] and r['alerts'] == 1 and r['nextId'], r)
@@ -59,12 +64,34 @@ def ui_tests(W, Hh, port):
     check(tag + '：限價單（價格錯邊會擋下、帶停損停利）', r['added'] and r['sl'] and r['tp'], r)
     r = pg.evaluate('''() => { const sym = state.settings.sym; const cur = S.prices[sym]; addAlert(cur * 1.0006); const a = state.alerts[state.alerts.length - 1]; checkAlerts(sym, cur * 1.001); closeSheet(); return { made: !!a, gone: !state.alerts.some((x) => x.id === a.id) }; }''')
     check(tag + '：價格提醒新增與觸發', r['made'] and r['gone'], r)
+    pg.evaluate("() => { closeSheet(); onAct('amount', ''); }"); pg.wait_for_timeout(200)
+    nb = pg.evaluate("() => [...document.querySelectorAll('#sheetBody [data-act=\"lev\"]')].map((b) => b.dataset.id)")
+    H.act(pg, 'lev', '100'); pg.wait_for_timeout(150)
+    l100 = pg.evaluate('() => state.settings.lev')
+    pg.fill('#levIn', ''); pg.type('#levIn', '25'); pg.wait_for_timeout(200)
+    l25 = pg.evaluate('() => ({ lev: state.settings.lev, focus: document.activeElement && document.activeElement.id, on: [...document.querySelectorAll("#sheetBody [data-act=lev].on")].length })')
+    pg.fill('#levIn', ''); pg.type('#levIn', '999'); pg.wait_for_timeout(150)
+    l999 = pg.evaluate('() => ({ lev: state.settings.lev, v: document.querySelector("#levIn").value })')
+    check(tag + '：槓桿按鈕到 125 倍、可以自訂倍數、超過會變成 125', nb == ['1','2','3','5','10','20','50','75','100','125'] and l100 == 100 and l25['lev'] == 25 and l25['focus'] == 'levIn' and l25['on'] == 0 and l999['lev'] == 125 and l999['v'] == '125', [nb, l100, l25, l999])
+    r = pg.evaluate("""() => { closeSheet(); state.settings.lev = 50; state.settings.slMode = 'off'; state.settings.tpMode = 'off'; state.settings.amtPct = 0.05; const n = state.positions.length; tradeBuy('long', true); const p = state.positions[state.positions.length - 1]; state.settings.slMode = 'auto'; state.settings.tpMode = 'r2'; state.settings.lev = 1; return { added: state.positions.length - n, id: p.id, lev: p.lev, sl: p.sl, owner: p.owner }; }""")
+    pg.evaluate("() => { state.settings.ptab = 'pos'; go('trade'); render(); }"); pg.wait_for_timeout(300)
+    sel = '[data-act="handover"][data-id="%s"]' % r['id']
+    vis = pg.evaluate('s => [...document.querySelectorAll(s)].some((b) => b.offsetParent)', sel)
+    pg.evaluate('s => [...document.querySelectorAll(s)].find((b) => b.offsetParent).click()', sel); pg.wait_for_timeout(200)
+    h = pg.evaluate('id => { const p = state.positions.find((x) => x.id === id); return { owner: p.owner, src: p.src, hand: p.hand, until: p.until > Date.now(), slOk: p.sl != null && p.sl < p.entry && p.sl > p.liq, btn: !!document.querySelector(\'[data-act="takeover"][data-id="\' + id + \'"]\') }; }', r['id'])
+    check(tag + '：50 倍自己的單按「交給團隊管」，團隊補上比強平近的停損', r['added'] == 1 and r['lev'] == 50 and r['sl'] is None and vis and h['owner'] == 'team' and h['src'] == 'deleg' and h['hand'] and h['until'] and h['slOk'] and h['btn'], [r, vis, h])
+    pg.evaluate('id => document.querySelector(\'[data-act="takeover"][data-id="\' + id + \'"]\').click()', r['id']); pg.wait_for_timeout(200)
+    b = pg.evaluate('id => { const p = state.positions.find((x) => x.id === id); return { owner: p.owner, hand: !!p.hand, until: p.until == null, btn: !!document.querySelector(\'[data-act="handover"][data-id="\' + id + \'"]\') }; }', r['id'])
+    pg.evaluate('id => onAct("handover", String(id))', r['id']); pg.wait_for_timeout(100)
+    c = pg.evaluate('id => { const p = state.positions.find((x) => x.id === id); p.until = Date.now() - 1000; const nj = TS.journal.length; teamManage(); learnFromClosed(); const t = state.trades.find((x) => x.id === id); return { closed: !state.positions.some((x) => x.id === id), owner: t && t.owner, src: t && t.src, mine: E.mine(state).some((x) => x.id === id), nj: TS.journal.length - nj }; }', r['id'])
+    check(tag + '：再改回我管、再交給團隊，團隊時間到會出場且不算進團隊學習', b['owner'] == 'me' and not b['hand'] and b['until'] and b['btn'] and c['closed'] and c['owner'] == 'team' and c['src'] == 'deleg' and not c['mine'] and c['nj'] == 0, [b, c])
+    pg.evaluate("() => { const n = state.positions.length; state.settings.amtPct = 0.05; tradeBuy('long', true); const p = state.positions[state.positions.length - 1]; onAct('handover', String(p.id)); window.__hid = p.id; save(); }")
     pg.evaluate("() => { onAct('fav', 'ETH'); save(); }")
     pg.reload()
     pg.wait_for_function('() => window.__shidan && window.__shidan.S.mode === "sim"', timeout=60000)
     pg.wait_for_timeout(1500)
-    r = pg.evaluate('() => ({ favs: state.favs, ind: [state.settings.ema, state.settings.boll, state.settings.sub], orders: state.orders.length })')
-    check(tag + '：重新整理後自選、指標、掛單都還在', 'ETH' in r['favs'] and r['ind'] == [True, True, 'macd'] and r['orders'] >= 1, r)
+    r = pg.evaluate('() => ({ favs: state.favs, ind: [state.settings.ema, state.settings.boll, state.settings.sub], orders: state.orders.length, hand: state.positions.some((p) => p.hand && p.owner === "team" && p.until) })')
+    check(tag + '：重新整理後自選、指標、掛單、交給團隊的單都還在', 'ETH' in r['favs'] and r['ind'] == [True, True, 'macd'] and r['orders'] >= 1 and r['hand'], r)
     for v in ['team', 'learn', 'stats', 'trade']:
         pg.evaluate('v => go(v)', v); pg.wait_for_timeout(500); pg.screenshot(path=H.OUT + tag + '-' + v + '.png')
     check(tag + '：四個分頁都能打開', not errs, errs[:3])

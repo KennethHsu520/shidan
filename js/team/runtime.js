@@ -368,6 +368,34 @@ function teamManage() {
   if (thesisCheck()) changed = true;
   if (changed) { afterClose(); save(); saveTeam(); if (S.view === 'trade') { tickUI(); drawChart(); } }
 }
+function handOver(id) {
+  const p = state.positions.find((x) => x.id === id);
+  if (!p || p.owner === 'team') return false;
+  const px = S.prices[p.sym];
+  if (!(px > 0)) { toast(p.sym + ' 目前沒有報價，等行情回來再交給團隊'); return false; }
+  const long = p.side === 'long';
+  if (p.sl == null) {
+    let d = atrDist(p.sym, px);
+    if (E.isLev(p) && p.liq > 0) { const room = Math.abs(px - p.liq) * 0.6; if (!(d > 0) || d > room) d = room; }
+    if (!(d > 0)) d = px * 0.02;
+    const sl = roundP(long ? px - d : px + d);
+    const r = E.setStops(state, p.id, sl, p.tp, px, true);
+    if (!r.ok) { toast('團隊設不了停損：' + r.err); return false; }
+  }
+  p.owner = 'team';
+  p.src = 'deleg';
+  p.hand = true;
+  p.until = nowT() + Team.HOLD * 5 * 60000;
+  p.be = false; p.trail = false; p.fav = 0;
+  teamLog('你把 ' + p.sym + ' ' + SIDE[p.side] + (p.lev > 1 ? ' ' + p.lev + ' 倍' : '') + '交給團隊管：停損 ' + fP(p.sl) + '，賺 1R 移到打平、1.5R 開始跟著移，最多抱 ' + fLeft(p.until - nowT()));
+  save();
+  saveTeam();
+  toast('這筆交給團隊管了，不算進團隊成績');
+  if (S.sheetKind === 'book') renderBook(true);
+  refreshTeam();
+  if (S.view === 'trade') { render(); drawChart(); }
+  return true;
+}
 function trailPos(p, px, bars) {
   if (!(p.r0 > 0) || !(p.qty > 0) || p.sl == null) return false;
   const dist = p.r0 / p.qty;

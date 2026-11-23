@@ -564,3 +564,9 @@ a.ntitle:hover { text-decoration: underline; text-underline-offset: 3px; }
   .bbook { gap: 28px; }
 }
 .field .calc.tk { margin-top: 0; }
+.seg.wide.lev2 { margin-top: 8px; }
+.levc { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; color: var(--ink2); }
+.field .levc input { width: 72px; flex: none; padding: 8px 10px; font-size: 15px; text-align: center; font-variant-numeric: tabular-nums; }
+.levc small { margin-left: auto; font-size: 12px; color: var(--muted); text-align: right; }
+.row-actions .btn.hand, .prow .btn.hand { white-space: nowrap; }
+.prow .acts { display: flex; gap: 6px; flex: none; }

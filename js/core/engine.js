@@ -14,7 +14,7 @@ const Engine = (() => {
   const MMR = 0.005;
   const FUND_8H = 0.0001;
   const MIN_AMOUNT = 10;
-  const MAX_LEV = 10;
+  const MAX_LEV = 125;
   const REASONS = {
     trend: '順著趨勢',
     dip: '跌深反彈',
@@ -726,7 +726,7 @@ const Engine = (() => {
     const num = (x, d) => (fin(x) ? x : d);
     s.rank = Number.isInteger(raw.rank) && raw.rank >= 1 && raw.rank <= 5 ? raw.rank : 1;
     s.cash = Math.max(0, num(raw.cash, RANKS[s.rank].cap));
-    const okPos = (p) => p && SYM.test(p.sym) && (p.side === 'long' || p.side === 'short') && pos(p.qty) && pos(p.entry) && pos(p.margin) && pos(p.eq0) && Number.isInteger(p.lev) && p.lev >= 1 && p.lev <= 10 && fin(p.t0);
+    const okPos = (p) => p && SYM.test(p.sym) && (p.side === 'long' || p.side === 'short') && pos(p.qty) && pos(p.entry) && pos(p.margin) && pos(p.eq0) && Number.isInteger(p.lev) && p.lev >= 1 && p.lev <= MAX_LEV && fin(p.t0);
     s.positions = Array.isArray(raw.positions) ? raw.positions.filter(okPos) : [];
     for (const p of s.positions) p.owner = p.owner === 'team' ? 'team' : 'me';
     s.orders = Array.isArray(raw.orders) ? raw.orders.filter((o) => o && SYM.test(o.sym) && pos(o.amount) && pos(o.limit) && pos(o.reserve) && Number.isInteger(o.lev)) : [];

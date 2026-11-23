@@ -68,12 +68,12 @@ function openTicket() {
     '<div class="field"><label><span>類型</span><span>' + (st.ordType === 'limit' ? '到價才成交' : '馬上用現價成交') + '</span></label>' + seg('otype', { market: '市價', limit: '限價' }, st.ordType) + '</div>' +
     (st.ordType === 'limit' ? '<div class="field"><label><span>限價</span><span>現價 ' + fP(cur) + '</span></label><input class="inp" id="limPx" type="text" inputmode="decimal" autocomplete="off" maxlength="18" value="' + (S.limitPx > 0 ? S.limitPx : '') + '" aria-label="限價"><div class="sub" style="margin-top:6px">買漲要低於現價、買跌要高於現價；也可以點訂單簿的價格直接帶入。</div></div>' : '') +
     '<div class="field"><label><span>金額</span><span>總資產的比例</span></label><div class="quick big">' + [0.05, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="pct" data-id="' + p + '" class="' + (st.amtPct === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(eq * p) + '</small></button>').join('') + '</div></div>' +
-    '<div class="field"><label><span>槓桿</span><span>部位 = 金額 × 槓桿</span></label><div class="seg wide">' + [1, 2, 3, 5, 10].map((x) => '<button data-act="lev" data-id="' + x + '" class="' + (st.lev === x ? 'on' : '') + '">' + (x === 1 ? '不開' : x + ' 倍') + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label><span>槓桿</span><span>部位 = 金額 × 槓桿，最高 ' + E.MAX_LEV + ' 倍</span></label>' + [[1, 2, 3, 5, 10], [20, 50, 75, 100, 125]].map((row, i) => '<div class="seg wide' + (i ? ' lev2' : '') + '">' + row.map((x) => '<button data-act="lev" data-id="' + x + '" class="' + (st.lev === x ? 'on' : '') + '">' + (x === 1 ? '不開' : x + ' 倍') + '</button>').join('') + '</div>').join('') + '<div class="levc"><span>自訂</span><input class="inp" id="levIn" type="text" inputmode="numeric" autocomplete="off" maxlength="3" value="' + st.lev + '" aria-label="自訂槓桿倍數"><span>倍</span><small>' + (st.lev >= 50 ? '價格反向約 ' + ((1 / st.lev - E.MMR) * 100).toFixed(2) + '% 就會強制平倉' : '輸入 1～' + E.MAX_LEV) + '</small></div></div>' +
     '<div class="field"><label><span>停損</span><span>離進場價多遠</span></label>' + seg('slm', SLM, st.slMode) + '</div>' +
     '<div class="field"><label><span>停利</span><span>停損距離的幾倍</span></label>' + seg('tpm', TPM, st.tpMode) + '</div>' +
     '<div class="field"><label><span>預估</span><span>' + seg('tkside', { long: '買漲', short: '買跌' }, side).replace('seg wide', 'seg') + '</span></label>' + estBlock(side) + '</div>' +
     '<div class="cta"><button class="btn up-b" data-act="tbuy" data-id="long">' + (st.ordType === 'limit' ? '掛單買漲' : '買漲') + '</button><button class="btn down-b" data-act="tbuy" data-id="short">' + (st.ordType === 'limit' ? '掛單買跌' : '買跌') + '</button></div><div class="cta"><button class="btn quiet" data-act="x">完成</button></div>';
-  if (S.sheetKind === 'ticket') { const b = $('#sheetBody'); const top = b.scrollTop; const f = document.activeElement && document.activeElement.id; patch(b, html); b.scrollTop = top; if (f === 'limPx') { const el = $('#limPx'); if (el) el.focus(); } }
+  if (S.sheetKind === 'ticket') { const b = $('#sheetBody'); const top = b.scrollTop; const f = document.activeElement && document.activeElement.id; patch(b, html); b.scrollTop = top; if (f === 'limPx' || f === 'levIn') { const el = $('#' + f); if (el) { el.focus(); if (f === 'levIn') { const n = el.value.length; el.setSelectionRange(n, n); } } } }
   else openSheet('ticket', html);
 }
 function refreshTicketEst() {
@@ -91,6 +91,17 @@ function onLimitInput(el) {
   const n = parseFloat(v);
   S.limitPx = n > 0 && n < 1e9 && isFinite(n) ? n : null;
   refreshTicketEst();
+}
+function onLevInput(el) {
+  const v = String(el.value || '').replace(/[^0-9]/g, '').slice(0, 3);
+  if (v !== el.value) el.value = v;
+  let n = parseInt(v, 10);
+  if (n > E.MAX_LEV) { n = E.MAX_LEV; el.value = String(n); }
+  if (!(n >= 1) || n === state.settings.lev) return;
+  state.settings.lev = n;
+  save();
+  openTicket();
+  renderBar();
 }
 function simMarket(sym, px) {
   if (!(px > 0)) return;
@@ -194,6 +205,7 @@ function paneHTML() {
   else body = paneHist();
   return tabs + '<div class="pbody">' + body + '</div>';
 }
+function handBtn(p) { return p.owner === 'team' ? '<button class="btn sm hand" data-act="takeover" data-id="' + p.id + '">改由我管</button>' : '<button class="btn sm hand" data-act="handover" data-id="' + p.id + '">交給團隊管</button>'; }
 function panePos() {
   const sym = state.settings.sym;
   const P = state.positions.slice().sort((a, b) => (b.sym === sym) - (a.sym === sym) || (a.owner === 'team') - (b.owner === 'team'));
@@ -205,7 +217,7 @@ function panePos() {
     const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
     const v = E.posValue(p, px) - p.margin;
     const r = posR(p, px);
-    return '<div class="prow"><button class="pm" data-act="' + (p.sym === sym ? 'book' : 'sym') + '" data-id="' + esc(p.sym) + '"><b>' + esc(p.sym) + '</b><span class="' + (p.side === 'long' ? 'up' : 'down') + '">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span>' + (p.owner === 'team' ? '<span class="who">團隊</span>' : '') + '<small>進場 ' + fP(p.entry) + (p.sl != null ? '　停損 ' + fP(p.sl) : '　未設停損') + (p.tp != null ? '　停利 ' + fP(p.tp) : '') + (E.isLev(p) && p.liq > 0 ? '　強平 ' + fP(p.liq) : '') + '</small></button><span class="pv"><b class="' + cls(v) + '">' + fS(v) + '</b><small class="' + cls(v) + '">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</small></span><button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button></div>';
+    return '<div class="prow"><button class="pm" data-act="' + (p.sym === sym ? 'book' : 'sym') + '" data-id="' + esc(p.sym) + '"><b>' + esc(p.sym) + '</b><span class="' + (p.side === 'long' ? 'up' : 'down') + '">' + (p.side === 'long' ? '買漲' : '買跌') + (p.lev > 1 ? ' ' + p.lev + 'x' : '') + '</span>' + (p.owner === 'team' ? '<span class="who">' + (p.hand ? '你交給團隊' : '團隊') + '</span>' : '') + '<small>進場 ' + fP(p.entry) + (p.sl != null ? '　停損 ' + fP(p.sl) : '　未設停損') + (p.tp != null ? '　停利 ' + fP(p.tp) : '') + (E.isLev(p) && p.liq > 0 ? '　強平 ' + fP(p.liq) : '') + '</small></button><span class="pv"><b class="' + cls(v) + '">' + fS(v) + '</b><small class="' + cls(v) + '">' + fPct(v / p.margin) + (r != null ? '　' + fR(r) : '') + '</small></span><span class="acts">' + handBtn(p) + '<button class="btn sm" data-act="closeId" data-id="' + p.id + '">平倉</button></span></div>';
   }).join('');
 }
 function paneOrd() {
