@@ -24,7 +24,7 @@ function viewLearn() {
 
 function viewStats() {
   const sv = state.settings.statsView;
-  const T = sv === 'me' ? E.mine(state) : sv === 'team' ? state.trades.filter((t) => t.owner === 'team') : state.trades;
+  const T = sv === 'me' ? E.mine(state) : sv === 'team' ? state.trades.filter((t) => t.owner === 'team' && t.src !== 'deleg') : state.trades;
   const st = E.statsFor(T);
   const recent = E.statsFor(E.mine(state).slice(-60));
   const who = sv === 'me' ? '你自己' : sv === 'team' ? '團隊' : '全部';

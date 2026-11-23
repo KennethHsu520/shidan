@@ -160,7 +160,8 @@ async function teamScan() {
       try {
         const k = S.mode === 'sim' ? simAgg(sym, 5).slice(-150) : await fetchKlines(sym, '5m', '&limit=150');
         if (k.length > 20) TS.recent[sym] = k;
-        for (const s of Team.latest(k, dir, 3, (t) => extAt(sym, t, true))) addSignal(sym, s, k);
+        const ls = Team.latest(k, dir, 3, (t) => extAt(sym, t, true));
+        for (const s of ls) addSignal(sym, s, k, ls.some((x) => x.side !== s.side && x.barT === s.barT));
       } catch (e) { TS.scanErr = (TS.scanErr || 0) + 1; }
     });
     const now = Date.now();
@@ -184,7 +185,7 @@ async function teamScan() {
   saveTeam();
   refreshTeam();
 }
-function addSignal(sym, s, k) {
+function addSignal(sym, s, k, mixed) {
   const id = sym + '-' + s.type + '-' + s.side + '-' + s.barT;
   if (TS.signals.some((x) => x.id === id)) return;
   if (CLK != null && TS.journal.some((j) => j.sym === sym && j.type === s.type && j.side === s.side && Math.abs(j.t0 - (s.barT + BAR5)) < 15 * 60000)) return;
@@ -197,12 +198,15 @@ function addSignal(sym, s, k) {
   const sig = { id, sym, type: s.type, side: s.side, plan: s.plan, barT: s.barT, seen: nowT(), grade: res ? res.grade : null, replay, volx: s.volx, f, dec };
   TS.signals.unshift(sig);
   if (TS.scanStat && CLK == null) TS.scanStat.sig++;
-  for (const p of teamPos().filter((x) => x.sym === sym && x.side !== s.side)) {
+  if (mixed) sig.mixed = true;
+  const strong = !mixed && dec.go && (sig.grade === 'A' || sig.grade === 'B');
+  for (const p of teamPos().filter((x) => x.sym === sym && x.side !== s.side && strong && nowT() - x.t0 >= FLIP_MIN && !(x.src === 'deleg' && !x.ask && !x.hand))) {
     const px = S.prices[sym];
     if (!(px > 0)) continue;
     const r = E.closePosition(state, p.id, px, nowT(), 'flip', S.prices);
     if (r.ok) { teamLog('團隊 ' + sym + ' 出現反方向訊號，提早出場 ' + fS(r.trade.pnl) + ' USDT'); toast('團隊 ' + sym + ' 反向訊號出場 ' + fS(r.trade.pnl)); afterClose(); }
   }
+  if (mixed) return sigSkip(sig, 'mixed', '同一根 K 線同時出現買漲和買跌訊號，方向不明不做');
   const d = TS.delegs.find((x) => x.sym === sym && (x.side === s.side || x.side === 'any'));
   if (d && sigWorthy(sig, d.side === 'any')) {
     if (teamTrade(sig, d.side === 'any' ? 'ask' : 'deleg')) { TS.delegs = TS.delegs.filter((x) => x !== d); if (CLK == null) toast(delegDoneTxt(d, sig)); return sigDone(sig); }
@@ -221,6 +225,7 @@ function addSignal(sym, s, k) {
   return sigSkip(sig, decCat(dec), dec.why);
 }
 function decCat(dec) { return dec.avoid && dec.avoid.length ? 'avoid' : dec.est != null && dec.est < (TS.tune ? TS.tune.est : 0.1) ? 'est' : 'replay'; }
+const FLIP_MIN = 15 * 60000;
 const SMALL_MULT = 0.5;
 const SMALL_NOTE = '小幣滑價大，風險減半';
 const smallCoin = (sig) => !!(sig && sig.f && sig.f.liq === 'small');

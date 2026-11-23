@@ -121,13 +121,15 @@ function runReplay(data, from, end) {
       learnFromClosed();
       for (const [sym, c, i] of bars) {
         if (i < 70) continue;
-        for (const s of Team.detect(c.ind, c.k, i)) {
+        const ds = Team.detect(c.ind, c.k, i);
+        const mixed = new Set(ds.map((x) => x.side)).size > 1;
+        for (const s of ds) {
           const pl = Team.plan(c.ind, c.k, i, s.side, s.stopRef);
           const f = L.features(c.ind, c.k, i, s.side, dir, s.volx, extAt(sym, c.k[i].t), pl);
           const rt = TS.rt[sym] || Team.ratios(c.k.slice(Math.max(0, i - 2000), i + 1));
           if (!TS.rt[sym]) TS.rt[sym] = rt;
           const rp = Team.replay(rt, pl, s.side, { runs: 400 });
-          addSignal(sym, Object.assign(s, { plan: pl, barT: c.k[i].t, f, replay: rp }), c.k);
+          addSignal(sym, Object.assign(s, { plan: pl, barT: c.k[i].t, f, replay: rp }), c.k, mixed);
         }
       }
       TS.signals = TS.signals.filter((x) => CLK - x.barT < 30 * 60000);

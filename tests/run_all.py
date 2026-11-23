@@ -118,14 +118,38 @@ def team_tests(port):
     r = pg.evaluate('''() => {
       const out = {};
       const k = simAgg('ETH', 5); const ind = Team.prepare(k); let n = 0, ok = 0;
-      for (let i = k.length - 130; i < k.length - 60 && n < 20; i++) for (const s of Team.detect(ind, k, i)) { const pl = Team.plan(ind, k, i, s.side, s.stopRef); const full = Team.simulate(k, i, pl, s.side); const sig = { id: 'T' + i + s.type + s.side, sym: 'ETH', type: s.type, side: s.side, plan: pl, barT: k[i].t, f: {}, dec: { go: false } }; shadowAdd(sig, 'est', 't'); TS.recent.ETH = k; shadowResolve(); const x = TS.shadows.find((z) => z.id === sig.id); n++; if (x && full && x.r === +full.r.toFixed(3)) ok++; }
+      for (let i = Math.max(60, k.length - 400); i < k.length - 60 && n < 20; i++) for (const s of Team.detect(ind, k, i)) { const pl = Team.plan(ind, k, i, s.side, s.stopRef); const full = Team.simulate(k, i, pl, s.side); const sig = { id: 'T' + i + s.type + s.side, sym: 'ETH', type: s.type, side: s.side, plan: pl, barT: k[i].t, f: {}, dec: { go: false } }; shadowAdd(sig, 'est', 't'); TS.recent.ETH = k; shadowResolve(); const x = TS.shadows.find((z) => z.id === sig.id); n++; if (x && full && x.r === +full.r.toFixed(3)) ok++; }
       out.shadow = [n, ok];
       out.lev = [teamLev(10, 0.005, 1000, 'long'), teamLev(10, 0.005, 400, 'long'), teamLev(10, 0.005, 100, 'long'), teamLev(10, 0.15, 100, 'long')];
       TS.tune = { con: 3, est: 0.1, at: 0 };
       const base = Date.now();
       for (let i = 0; i < 25; i++) TS.shadows.push({ id: 'c' + i, sym: 'BTC', type: 'pullback', side: 'long', barT: base - 3600000, plan: { entry: 1, stop: 0.9, target: 1.4, dist: 0.1 }, f: {}, cat: 'con', why: '', r: 0.5, t1: base });
       tuneGates(true); out.con = conMax();
-      TS.halt = true; out.halt = guard().block; TS.halt = false;
+      TS.halt = true; TS.haltAt = Date.now(); out.halt = guard().block; TS.halt = false; TS.haltAt = 0;
+      const jn = TS.journal.length, ra = TS.resumeAt;
+      TS.resumeAt = 0;
+      for (let i = 0; i < 6; i++) TS.journal.push({ id: 800000 + i, t0: base - 7200000, t1: base - 3600000 + i, sym: 'BTC', type: 'pullback', side: 'long', f: null, src: 'auto', r: -1, riskReal: 0.01, pnl: -10, why: '' });
+      const g1 = guard(); const c0 = state.cash; state.cash = c0 / 30; const g2 = guard(); state.cash = c0;
+      TS.halt = true; TS.haltAt = 0; const g3 = guard(); const cleared = !TS.halt && TS.haltAt === 0;
+      TS.halt = true; TS.haltAt = Date.now() - 86400000 - 1000; guard(); const auto = !TS.halt && TS.rehab > 0 && guard().notes.some((x) => x.includes('恢復'));
+      TS.rehab = 0;
+      TS.journal.splice(jn); TS.resumeAt = ra;
+      out.dec = { dd1: g1.dd, dd2: g2.dd, day1: g1.dayF, day2: g2.dayF, cleared, auto };
+      const before = state.positions.length;
+      TS.auto = true; state.settings.teamPct = 0.25;
+      const kk = TS.recent.ETH || simAgg('ETH', 5).slice(-150);
+      const pl = { entry: S.prices.ETH, stop: S.prices.ETH * 0.99, target: S.prices.ETH * 1.02, dist: S.prices.ETH * 0.01 };
+      const pl2 = { entry: S.prices.ETH, stop: S.prices.ETH * 1.01, target: S.prices.ETH * 0.98, dist: S.prices.ETH * 0.01 };
+      const bt = Date.now() - 1000;
+      addSignal('ETH', { type: 'pullback', side: 'long', plan: pl, barT: bt, f: { align: 'flat' } }, kk, true);
+      addSignal('ETH', { type: 'pullback', side: 'short', plan: pl2, barT: bt, f: { align: 'flat' } }, kk, true);
+      const mixedSkip = TS.signals.filter((x) => x.barT === bt && x.mixed).every((x) => x.skip && x.skip.cat === 'mixed');
+      const tp = E.openPosition(state, { sym: 'ADA', side: 'long', lev: 1, amount: 20, price: S.prices.ADA, now: Date.now(), owner: 'team', src: 'auto' }, S.prices);
+      E.setStops(state, tp.pos.id, S.prices.ADA * 0.98, null, S.prices.ADA, true);
+      const plA = { entry: S.prices.ADA, stop: S.prices.ADA * 1.01, target: S.prices.ADA * 0.98, dist: S.prices.ADA * 0.01 };
+      addSignal('ADA', { type: 'pullback', side: 'short', plan: plA, barT: bt + 1, f: { align: 'flat' } }, kk, false);
+      const keptNew = state.positions.some((p) => p.id === tp.pos.id);
+      out.flip = { mixedSkip, keptNew, opened: state.positions.length - before };
       const kb0 = JSON.stringify(L.build([], TS.journal.filter((j) => !j.cancel && j.src !== 'deleg'), [])); const nj = TS.journal.length;
       for (let i = 0; i < 40; i++) TS.journal.push({ id: 900000 + i, t0: base - 7200000, t1: base - 3600000, sym: 'BTC', type: 'pullback', side: 'long', f: { align: Object.keys(L.FEATS.align)[0] }, est: 0.1, src: 'deleg', r: -3, pnl: -10, why: '', cancel: false });
       learnRebuild(true);
@@ -140,6 +164,9 @@ def team_tests(port):
     check('團隊：槓桿只用剛好放得下的倍數、最多 5 倍', lv[0]['lev'] == 2 and lv[1]['lev'] == 5 and lv[2]['lev'] == 5 and lv[2]['amount'] <= 100 and lv[3]['lev'] == 1, lv)
     check('團隊：反方審查會依影子單自動放寬', r['con'] == 4, r['con'])
     check('團隊：防守規則照常擋下', bool(r['halt']), r['halt'])
+    d = r['dec']
+    check('團隊：回落和每日虧損不受你帳戶大小影響，誤判的暫停會解除、暫停 24 小時自動恢復', abs(d['dd1'] - d['dd2']) < 1e-12 and abs(d['day1'] - d['day2']) < 1e-12 and abs(d['day1'] + 0.06) < 1e-9 and d['cleared'] and d['auto'], d)
+    check('團隊：同時出現買漲買跌不做、剛進場的單不會被反向訊號洗掉', r['flip']['mixedSkip'] and r['flip']['keptNew'], r['flip'])
     check('團隊：你委託或交給團隊的單不進團隊學習', r['sep']['same'] and r['sep']['usedKb'], r['sep'])
     check('團隊：沒有錯誤', not errs, errs[:3])
     stop()

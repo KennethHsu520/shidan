@@ -2,8 +2,8 @@ const SHKEY = 'gaoqian.shadow';
 const SH_MAX = 500;
 const FEED_MAX = 150;
 const PRACTICE_GAP = 2 * 3600000;
-const VETO = { est: '預估不夠好', avoid: '符合避開守則', replay: '重播結果太差', con: '反方審查', brain: '大方向、新聞或數據公布', guard: '防守規則', shock: '比特幣急動', small: '小幣只做 A、B 級', cap: '風險上限', chase: '價格跑掉不追', budget: '團隊額度', short: '買跌還沒解鎖', deleg: '讓給你的委託', off: '自己找單關閉', size: '金額太小', busy: '試單名額已滿', data: '資料有問題', other: '其他' };
-const VETO_WHO = { est: '機會獵人', avoid: '團隊守則', replay: '時光機', con: '反方審查', brain: '市場總監', guard: '風控長', shock: '風控長', small: '風控長', cap: '風控長', budget: '風控長', chase: '交易員', short: '交易員', deleg: '交易員', off: '交易員', size: '交易員', busy: '交易員', data: '資料查核員', other: '交易員' };
+const VETO = { mixed: '方向打架', est: '預估不夠好', avoid: '符合避開守則', replay: '重播結果太差', con: '反方審查', brain: '大方向、新聞或數據公布', guard: '防守規則', shock: '比特幣急動', small: '小幣只做 A、B 級', cap: '風險上限', chase: '價格跑掉不追', budget: '團隊額度', short: '買跌還沒解鎖', deleg: '讓給你的委託', off: '自己找單關閉', size: '金額太小', busy: '試單名額已滿', data: '資料有問題', other: '其他' };
+const VETO_WHO = { mixed: '機會獵人', est: '機會獵人', avoid: '團隊守則', replay: '時光機', con: '反方審查', brain: '市場總監', guard: '風控長', shock: '風控長', small: '風控長', cap: '風控長', budget: '風控長', chase: '交易員', short: '交易員', deleg: '交易員', off: '交易員', size: '交易員', busy: '交易員', data: '資料查核員', other: '交易員' };
 function cleanF(f) {
   if (!f || typeof f !== 'object') return null;
   return Object.fromEntries(Object.keys(L.FEATS).filter((k) => typeof f[k] === 'string' && L.FEATS[k][f[k]]).map((k) => [k, f[k]]));

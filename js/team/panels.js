@@ -14,7 +14,7 @@ function todayRisk() {
 }
 function avgR(T) { const rs = T.filter((t) => t.r != null); return rs.length ? rs.reduce((a, t) => a + t.r, 0) / rs.length : null; }
 function compareHTML() {
-  const A = E.mine(state), B = state.trades.filter((t) => t.owner === 'team');
+  const A = E.mine(state), B = state.trades.filter((t) => t.owner === 'team' && t.src !== 'deleg');
   const a = E.statsFor(A), b = E.statsFor(B);
   const ra = avgR(A), rb = avgR(B);
   const sum = (T) => T.reduce((x, t) => x + t.pnl, 0);
@@ -23,7 +23,7 @@ function compareHTML() {
     row('交易筆數', a.n, b.n) + row('勝率', a.n ? Math.round(a.winRate * 100) + '%' : '—', b.n ? Math.round(b.winRate * 100) + '%' : '—') +
     row('平均 R', ra == null ? '—' : fR(ra), rb == null ? '—' : fR(rb)) + row('每筆期望值', a.n ? fPct(a.exp) : '—', b.n ? fPct(b.exp) : '—') +
     row('已實現損益', a.n ? '<span class="' + cls(sum(A)) + '">' + fS(sum(A)) + '</span>' : '—', b.n ? '<span class="' + cls(sum(B)) + '">' + fS(sum(B)) + '</span>' : '—') +
-    '</div><div class="sub" style="margin-top:8px">期望值以當時總資產計算。委託給團隊的單算團隊的成績。</div></section>';
+    '</div><div class="sub" style="margin-top:8px">期望值以當時總資產計算。你委託、請團隊判斷、交給團隊管的單，兩邊都不算。</div></section>';
 }
 function newsHTML() {
   if (S.mode !== 'live') return '';

@@ -12,6 +12,8 @@ function loadTeam() {
   TS.tune = tu && [3, 4].includes(tu.con) && [0.05, 0.1, 0.15].includes(tu.est) ? { con: tu.con, est: tu.est, at: typeof tu.at === 'number' ? tu.at : 0 } : { con: 3, est: 0.1, at: 0 };
   TS.halt = !!(r && r.halt);
   TS.resumeAt = r && typeof r.resumeAt === 'number' && r.resumeAt > 0 ? r.resumeAt : 0;
+  TS.haltAt = r && typeof r.haltAt === 'number' && r.haltAt > 0 ? r.haltAt : 0;
+  TS.rehab = r && typeof r.rehab === 'number' && r.rehab > 0 ? r.rehab : 0;
   TS.lastRun = r && typeof r.lastRun === 'number' && r.lastRun > 0 && r.lastRun <= Date.now() ? r.lastRun : 0;
   if (TS.lastRun && Date.now() - TS.lastRun > GAP_MIN) { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }
   TS.log = Array.isArray(r && r.log) ? r.log.filter((x) => x && typeof x.t === 'number' && typeof x.text === 'string').map((x) => ({ t: x.t, text: x.text.slice(0, 160) })).slice(-30) : [];
@@ -27,6 +29,6 @@ function loadTeam() {
 }
 function saveTeam() {
   if (SY.applying) return;
-  try { localStorage.setItem(TKEY, JSON.stringify({ v: 4, auto: TS.auto, practice: TS.practice !== false, tune: TS.tune, log: TS.log, delegs: TS.delegs, journal: TS.journal.map((j) => { const o = Object.assign({}, j); delete o.thb; return o; }), lastRun: TS.lastRun || 0, halt: !!TS.halt, resumeAt: TS.resumeAt || 0, weeks: TS.weeks, audit: TS.audit, coach: TS.coach })); } catch (e) { return; }
+  try { localStorage.setItem(TKEY, JSON.stringify({ v: 4, auto: TS.auto, practice: TS.practice !== false, tune: TS.tune, log: TS.log, delegs: TS.delegs, journal: TS.journal.map((j) => { const o = Object.assign({}, j); delete o.thb; return o; }), lastRun: TS.lastRun || 0, halt: !!TS.halt, resumeAt: TS.resumeAt || 0, haltAt: TS.haltAt || 0, rehab: TS.rehab || 0, weeks: TS.weeks, audit: TS.audit, coach: TS.coach })); } catch (e) { return; }
   saveShadow();
 }

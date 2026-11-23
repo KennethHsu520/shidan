@@ -297,10 +297,16 @@ const TeamLearn = (() => {
     return { risk, notes };
   }
 
+  function teamRet(j, alloc) {
+    if (j.r != null && isFinite(j.r) && j.riskReal > 0 && isFinite(j.riskReal)) return j.r * j.riskReal;
+    if (j.pnl != null && isFinite(j.pnl) && alloc > 0) return j.pnl / alloc;
+    return 0;
+  }
+
   function teamDD(journal, alloc) {
     let cum = 0, peak = 0;
-    for (const j of journal || []) if (j.pnl != null && isFinite(j.pnl)) { cum += j.pnl; if (cum > peak) peak = cum; }
-    return alloc > 0 ? (peak - cum) / alloc : 0;
+    for (const j of journal || []) { cum += teamRet(j, alloc); if (cum > peak) peak = cum; }
+    return Math.max(0, peak - cum);
   }
 
   function accuracy(journal) {
@@ -330,6 +336,6 @@ const TeamLearn = (() => {
     }
     return { n, hit, rate: n ? hit / n : null };
   }
-  return { LIQ_BIG, LIQ_MID, liqAt, liqTier, EVWIN, derivState, newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, accuracy, fmtR };
+  return { LIQ_BIG, LIQ_MID, liqAt, liqTier, EVWIN, derivState, newsSame, newsHits, NAMES, newsScore, newsCoins, newsMood, FEATS, W_LIVE, regimeSeries, session, features, samplesFrom, build, estimate, rules, hits, decide, label, sizing, teamDD, teamRet, accuracy, fmtR };
 })();
 if (typeof module !== 'undefined') module.exports.Learn = TeamLearn;

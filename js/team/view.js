@@ -22,9 +22,9 @@ function viewTeam() {
   const gRow = (label, val, lim, bad) => '<div class="row"><div class="row-main"><span>' + label + '</span><b class="' + (bad ? 'down' : '') + '">' + val + '<small class="glim">　' + lim + '</small></b></div></div>';
   const guardHTML = '<section><h3>防守規則</h3><div class="verdict ' + (gd.block ? 'down' : '') + '" style="font-size:20px">' + (gd.block ? esc(gd.block) : gd.mult < 1 ? '照常交易，但' + esc(gd.notes.join('、')) : '一切正常') + '</div>' + (TS.halt ? '<div class="cta" style="margin-top:12px"><button class="btn solid" data-act="tresume">恢復團隊交易</button></div><p class="say">按下去後，回落從現在重新計算。</p>' : '') +
     '<div class="list" style="margin-top:12px">' +
-    gRow('今天團隊損益', fS(gd.day), '上限 −3%', -gd.day >= RISK.day * gd.A && gd.A > 0) +
-    gRow('最近 7 天', fS(gd.week), '虧 5% 改半量', -gd.week >= RISK.week * gd.A && gd.A > 0) +
-    gRow('從高點回落', (gd.dd * 100).toFixed(1) + '%', '15% 全部暫停', TS.halt) +
+    gRow('今天團隊損益', fS(gd.day) + '（' + fPct(gd.dayF) + '）', '上限 −3%', -gd.dayF >= RISK.day) +
+    gRow('最近 7 天', fS(gd.week) + '（' + fPct(gd.weekF) + '）', '虧 5% 改半量', -gd.weekF >= RISK.week) +
+    gRow('從高點回落', (gd.dd * 100).toFixed(1) + '%', '15% 暫停 24 小時', TS.halt) +
     gRow('同時承擔的風險', pc(gd.open).toFixed(1) + '%', '上限 5%', pc(gd.open) >= 5) +
     gRow('同方向風險', '漲 ' + pc(gd.side.long).toFixed(1) + '%・跌 ' + pc(gd.side.short).toFixed(1) + '%', '各 3%', Math.max(pc(gd.side.long), pc(gd.side.short)) >= 3) +
     gRow('連賠', gd.streak + ' 筆', '4 筆冷靜 1 小時', gd.coolUntil > Date.now()) +
@@ -87,7 +87,7 @@ function viewTeam() {
   return '<div class="cols"><section style="margin-top:14px"><h3>市場總監</h3><div class="verdict ' + (rg ? (rg.dir === 'up' ? 'up' : rg.dir === 'down' ? 'down' : '') : '') + '">' + dirTxt + '</div><div class="sub">' + (rg ? '比特幣 1 小時線：4 項指標有 ' + votes + ' 項' + (rg.dir === 'flat' ? '同方向，方向不明確' : '同意') + '　24 小時 ' + fPct(rg.chg) + '　每小時波動約 ' + (rg.vol * 100).toFixed(2) + '%' : '讀取比特幣走勢中') + '</div>' + moodHTML + '<div class="sub status">' + esc(status) + (TS.err ? '　' + esc(TS.err) : '') + '</div></section>' +
     feedHTML() + briefHTML() + '<section><h3>團隊額度</h3><div class="quick big tq">' + [0, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="tpct" data-id="' + p + '" class="' + (tp === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(bd.eq * p) + '</small></button>').join('') + '</div>' +
     '<div class="sub" style="margin-top:10px">團隊最多動用你總資產的 ' + tp * 100 + '%（' + fU(bd.alloc) + ' USDT），已用 ' + fU(bd.used) + '。自己找單用這個額度；你在交易頁按「請團隊判斷」或委託的單，用你自己的每筆金額，不佔額度。</div>' +
-    '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做，網頁開著才會運作</span></span><i class="sw"></i></button></div></div>' +
+    '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做；網頁開著時在這台跑，關掉後由雲端團隊每小時接手</span></span><i class="sw"></i></button></div></div>' +
     '<h3 style="margin-top:22px">團隊手上的單</h3>' + (tRows ? '<div class="list">' + tRows + '</div>' : '<div class="empty">目前沒有。</div>') + '</section>' +
     layersHTML + calHTML() + sectorHTML() + taHTML() + exHTML + guardHTML + newsHTML() + whaleHTML() +
     '<section><h3>資金控制</h3><div class="big">' + (sz.risk * 100).toFixed(2) + '%<small>下一筆的基本風險</small></div><div class="sub">約 ' + fU(bd.alloc * sz.risk) + ' USDT：停損打到時大約賠這麼多。' + esc(sz.notes.join('，')) + '。實際下單時再依這筆的把握度乘 0.7～1.3 倍。</div>' + riskSvg(J) + '</section>' +
@@ -156,7 +156,7 @@ function teamAct(act, id) {
   if (act === 'tpct') { const v = parseFloat(id); if ([0, 0.1, 0.25, 0.5, 1].includes(v)) { state.settings.teamPct = v; save(); refreshTeam(); toast(v ? '團隊額度：總資產的 ' + v * 100 + '%' : '團隊額度 0%：團隊只找訊號'); } return true; }
   if (act === 'handover') { handOver(parseFloat(id)); return true; }
   if (act === 'takeover') { const p = state.positions.find((x) => x.id === parseFloat(id)); if (p) { p.owner = 'me'; delete p.until; delete p.hand; delete p.be; delete p.trail; delete p.fav; p.src = null; save(); if (S.view === 'trade') drawChart(); toast('這筆改由你管，停損停利線可以自己拖'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); } return true; }
-  if (act === 'tresume') { TS.halt = false; TS.resumeAt = Date.now(); teamLog('你恢復了團隊交易，回落從現在重新計算'); saveTeam(); toast('團隊恢復交易'); refreshTeam(); return true; }
+  if (act === 'tresume') { TS.halt = false; TS.haltAt = 0; TS.resumeAt = Date.now(); teamLog('你恢復了團隊交易，回落從現在重新計算'); saveTeam(); toast('團隊恢復交易'); refreshTeam(); return true; }
   if (act === 'dcancel') { TS.delegs = TS.delegs.filter((d) => d.id !== id); teamLog('取消委託'); saveTeam(); toast('委託已取消'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); return true; }
   if (act === 'judge') { state.settings.judge = id === 'team' ? 'team' : 'me'; save(); renderBar(); toast(id === 'team' ? '交給團隊：按「請團隊判斷」由團隊決定漲跌' : '自己判斷：按了馬上成交'); return true; }
   if (act === 'tare') { delete TA.cache[state.settings.sym]; refreshTeam(); return true; }
