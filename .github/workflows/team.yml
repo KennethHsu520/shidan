@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: cloud-team
@@ -32,3 +33,14 @@ jobs:
         env:
           GAOQIAN_TOKEN: ${{ secrets.GAOQIAN_TOKEN }}
           RUN_MIN: '50'
+      - name: 接著排下一次
+        if: always()
+        run: |
+          if [ -n "$GAOQIAN_TOKEN" ]; then
+            gh api -X POST "repos/${{ github.repository }}/actions/workflows/team.yml/dispatches" -f ref=main && echo "已排下一次"
+          else
+            echo "沒有 GAOQIAN_TOKEN，不排下一次"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GAOQIAN_TOKEN: ${{ secrets.GAOQIAN_TOKEN }}
