@@ -158,7 +158,7 @@ function holdInfo(s) {
     parts.push((P.some((p) => p.owner === 'team') ? '<span class="who">團隊</span>' : '') + '<span class="hold-side ' + (P[0].side === 'long' ? 'up' : 'down') + '">' + sides.join('／') + '</span>' + fQ(qty) + ' 顆　<b class="' + cls(pnl) + '">' + fS(pnl) + '</b> <span class="' + cls(pnl) + '">' + fPct(pnl / margin) + '</span>');
   }
   if (O.length) parts.push('掛單 ' + O.length + ' 張');
-  if (D.length) parts.push('<span class="who">委託團隊</span><span class="hold-side ' + (D[0].side === 'long' ? 'up' : 'down') + '">' + SIDE[D[0].side] + '</span>等進場　剩 ' + fLeft(D[0].until - Date.now()));
+  if (D.length) parts.push('<span class="who">' + (D[0].side === 'any' ? '請團隊判斷' : '委託團隊') + '</span>' + (D[0].side === 'any' ? '' : '<span class="hold-side ' + (D[0].side === 'long' ? 'up' : 'down') + '">' + SIDE[D[0].side] + '</span>') + '等進場　剩 ' + fLeft(D[0].until - Date.now()));
   return '<span class="hold">' + parts.join('　') + '</span>';
 }
 const COIN_CACHE = { key: '', t: 0, html: '' };

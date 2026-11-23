@@ -152,10 +152,9 @@ function hdrEq() {
   for (const p of state.positions) un += E.posValue(p, S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry) - p.margin;
   v.textContent = fU(eq);
   const sub = $('#eqSub');
-  const t = '可用 ' + fU(state.cash) + (state.positions.length ? '　未實現 ' + fS(un) : '');
-  if (sub.textContent !== t) sub.textContent = t;
-  const c = state.positions.length ? cls(un) : '';
-  if (sub.dataset.c !== c) { sub.dataset.c = c; sub.className = c; }
+  const u2 = Math.round(un * 100) / 100;
+  const h = '可用 ' + fU(state.cash) + (state.positions.length ? '　<span class="' + cls(u2) + '">未實現 ' + fS(u2) + '</span>' : '');
+  if (sub.dataset.h !== h) { sub.dataset.h = h; sub.innerHTML = h; sub.className = ''; }
 }
 function tickUI() {
   hdrEq();

@@ -264,7 +264,7 @@ const TeamLearn = (() => {
     return { go, est: e.est, why, avoid, prefer, parts: e.parts };
   }
 
-  function fmtR(r) { return (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(2) + 'R'; }
+  function fmtR(r) { return (r >= 0 || Math.abs(r) < 0.005 ? '+' : '−') + Math.abs(r).toFixed(2) + 'R'; }
 
   function label(r) {
     const [type, side] = r.key.split(':');

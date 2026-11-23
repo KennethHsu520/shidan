@@ -15,14 +15,15 @@ const rich = (s) => esc(s).replace(/\[\[(.+?)\]\]/g, (m, t) => (GLOSSARY[t] ? '<
 const dec = (p) => (p >= 1000 ? 2 : p >= 10 ? 3 : p >= 1 ? 4 : p >= 0.01 ? 5 : p >= 0.0001 ? 7 : 9);
 const fP = (p) => (p > 0 && isFinite(p) ? p.toLocaleString('en-US', { minimumFractionDigits: dec(p), maximumFractionDigits: dec(p) }) : '—');
 const fU = (x) => (isFinite(x) ? x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—');
-const fS = (x) => (x >= 0 ? '+' : '−') + fU(Math.abs(x));
-const fPct = (x, d) => (x >= 0 ? '+' : '−') + (Math.abs(x) * 100).toFixed(d == null ? 2 : d) + '%';
-const fR = (r) => (r == null || !isFinite(r) ? '' : (r >= 0 ? '+' : '−') + Math.abs(r).toFixed(1) + 'R');
+const sgn = (x, d) => (Math.abs(x) < 0.5 * Math.pow(10, -d) || x >= 0 ? '+' : '−');
+const fS = (x) => (isFinite(x) ? sgn(x, 2) + fU(Math.abs(x)) : '—');
+const fPct = (x, d) => { const n = d == null ? 2 : d; return isFinite(x) ? sgn(x * 100, n) + (Math.abs(x) * 100).toFixed(n) + '%' : '—'; };
+const fR = (r) => (r == null || !isFinite(r) ? '' : sgn(r, 1) + Math.abs(r).toFixed(1) + 'R');
 const fQ = (q) => (q >= 1e6 ? (q / 1e6).toFixed(2) + 'M' : q >= 1000 ? q.toFixed(0) : q >= 100 ? q.toFixed(1) : q >= 1 ? q.toFixed(3) : q >= 0.01 ? q.toFixed(4) : q.toFixed(6));
 const fT = (t) => { const d = new Date(t); const z = (n) => String(n).padStart(2, '0'); return d.getMonth() + 1 + '/' + d.getDate() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
 const fHM = (t) => { const d = new Date(t); const z = (n) => String(n).padStart(2, '0'); return z(d.getHours()) + ':' + z(d.getMinutes()); };
 const fVol = (v) => (v >= 1e9 ? (v / 1e9).toFixed(1) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : fU(v));
-const cls = (x) => (x > 0 ? 'up' : x < 0 ? 'down' : '');
+const cls = (x) => (x > 0.000001 ? 'up' : x < -0.000001 ? 'down' : '');
 const roundP = (p) => { const d = dec(p); const m = Math.pow(10, d); return Math.round(p * m) / m; };
 
 function morph(a, b) {
