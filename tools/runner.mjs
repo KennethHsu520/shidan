@@ -54,7 +54,10 @@ const STATUS = () => ({
   eq: Math.round(E.equity(state, S.prices) * 100) / 100,
   team: state.positions.filter((p) => p.owner === 'team').map((p) => p.sym + ' ' + p.side + (p.lev > 1 ? ' ' + p.lev + 'x' : '')),
   journal: TS.journal.length, shadows: (TS.shadows || []).length, loaded: TS.loaded + '/' + TS.total,
-  replay: TS.gapFrom != null, err: TS.err || null, sync: SY.err || null
+  replay: TS.gapFrom != null, err: TS.err || null, sync: SY.err || null,
+  block: (() => { try { return guard().block || null; } catch (e) { return null; } })(),
+  auto: TS.auto, pct: state.settings.teamPct,
+  veto: (TS.shadows || []).filter((x) => x.barT > Date.now() - 3600000).reduce((a, x) => { a[x.cat] = (a[x.cat] || 0) + 1; return a; }, {})
 });
 
 async function main() {
