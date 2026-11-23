@@ -27,6 +27,8 @@
   - `state.js` 團隊資料存取
   - `market-data.js` 大盤資料、新聞、數據日曆
   - `sectors-thesis.js` 板塊輪動、論點追蹤
+  - `whale.js` 巨鯨觀察員（大單、爆倉、大戶多空比）
+  - `shadow.js` 否決紀錄、影子單、團隊動態、冷場練習單
   - `risk.js` 週報、稽核、防守規則、反方審查
   - `replay.js` 離線補跑
   - `runtime.js` 掃描、下單、管單

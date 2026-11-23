@@ -105,13 +105,17 @@ function brainCheck(sig) {
   if (!long && ss === 'strong') { mult *= 0.75; notes.push(sectName(sig.sym) + ' 板塊偏強，買跌減碼'); }
   const rp = f.room === 'tight' && sig.dec && sig.dec.parts ? sig.dec.parts.find((x) => x.fk === 'room') : null;
   if (rp && rp.n >= 15 && rp.avg != null && rp.avg < -0.1) { mult *= 0.75; notes.push('前方 1R 內就有' + (long ? '壓力' : '支撐') + '，這類單過去平均 ' + L.fmtR(rp.avg) + '，減碼'); }
+  const wp = f.whale === 'against' && sig.dec && sig.dec.parts ? sig.dec.parts.find((x) => x.fk === 'whale') : null;
+  if (wp && wp.n >= 15 && wp.avg != null && wp.avg < -0.1) { mult *= 0.75; notes.push('大戶多空比 4 小時往反方向變，這類單過去平均 ' + L.fmtR(wp.avg) + '，減碼'); }
   const con = notes.slice();
+  const bf = CLK == null ? bigFlow(sig.sym) : null;
+  if (bf && bf.strong && (bf.net > 0) !== long) con.push('巨鯨觀察員：15 分鐘大單淨' + (bf.net > 0 ? '買進' : '賣出') + ' ' + fBig(Math.abs(bf.net)) + '，跟這個方向相反（大單也可能是對沖或內部調度，只當參考）');
   if (sig.dec && sig.dec.avoid && sig.dec.avoid.length) con.push('符合團隊「避開」守則：' + L.label(sig.dec.avoid[0]));
   if ((long && f.news === 'bad') || (!long && f.news === 'good')) con.push('這個幣最近的新聞跟這個方向相反');
   const lastSame = TS.journal.filter((j) => !j.cancel && j.sym === sig.sym && j.r != null && j.t1 && t - j.t1 < 86400000).pop();
   if (lastSame && lastSame.r < 0) con.push('團隊 24 小時內做 ' + sig.sym + ' 剛賠過（' + L.fmtR(lastSame.r) + '）');
   if (sig.dec && sig.dec.parts && sig.dec.parts.length && sig.dec.parts.every((x) => x.n < 15)) con.push('同類樣本都不到 15 份，預估不可靠');
-  if (con.length >= CON_MAX) return { block: '反方審查：找到 ' + con.length + ' 個反對理由（' + con.slice(0, 3).join('；') + '），不做', mult, notes, con };
+  if (con.length >= CON_MAX) return { block: '反方審查：找到 ' + con.length + ' 個反對理由（' + con.slice(0, 3).join('；') + '），不做', mult: Math.max(0.25, mult), notes, con, conBlock: true };
   return { block: null, mult: Math.max(0.25, mult), notes, con };
 }
 const CON_MAX = 3;

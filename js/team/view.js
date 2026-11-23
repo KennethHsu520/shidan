@@ -12,8 +12,8 @@ function viewTeam() {
   const tp = state.settings.teamPct;
   const tRows = teamPosRows();
   const J = TS.journal.filter((j) => !j.cancel);
-  const acc = L.accuracy(J);
-  const sz = L.sizing(J, { dd: L.teamDD(J, bd.alloc) });
+  const acc = L.accuracy(J.filter((j) => !j.practice));
+  const sz = L.sizing(J.filter((j) => !j.explore && !j.practice), { dd: L.teamDD(J, bd.alloc) });
   const avoid = (TS.rules || []).filter((r) => r.kind === 'avoid').slice(0, 6);
   const prefer = (TS.rules || []).filter((r) => r.kind === 'prefer').slice(0, 6);
   const accCell = (a) => (a.n ? '<b>' + Math.round(a.wr * 100) + '%</b><small>' + a.n + ' 筆　平均 ' + L.fmtR(a.avg) + '</small>' : '<b>—</b><small>還沒有紀錄</small>');
@@ -51,7 +51,11 @@ function viewTeam() {
     ['研究提示詞：回測可信度', '時光機切成前 70% 和最近 30%，前面賺最近賠就當作過度擬合，降成 C 級'],
     ['研究提示詞：交易教練', '檢討你最近 20 筆，分清楚紀錄證明的事和推測，訂 3 條規則並追蹤遵守率'],
     ['研究提示詞：風險管理', '比特幣跌 20% 的壓力測試、集中度、跟比特幣的連動，比較調整方案'],
-    ['研究提示詞：資料查核、事件日曆', '每份資料分成已核實、待核實、有誤；重大數據排到 2027 年底，找不到的日期標待確認']
+    ['研究提示詞：資料查核、事件日曆', '每份資料分成已核實、待核實、有誤；重大數據排到 2027 年底，找不到的日期標待確認'],
+    ['AI 交易團隊：巨鯨觀察員', '追蹤幣安大單、爆倉和大戶多空比；只當參考，大單淨額很大又跟方向相反才算一個反方理由'],
+    ['AI 交易團隊：否決紀錄、影子單', '沒做的訊號都記下原因，在背後照出場計畫跑完，檢查每一關是不是擋太多，結果也算進經驗'],
+    ['AI 交易團隊：團隊動態', '每個角色做了什麼都記在同一條時間軸'],
+    ['冷場練習單', '團隊 2 小時沒進場，就用最小風險做一筆 B 級以上的訊號，不算進成績']
   ].map((x) => '<div class="row"><div class="row-main"><div><b>' + x[0] + '</b><div class="sub">' + x[1] + '</div></div></div></div>').join('') + '</div><p class="say">防守規則一定遵守；其他條件都交給團隊自己學：在加密貨幣有效就變成偏好，沒效就變成避開。</p></section>';
   const fgNow = MD.fg.length ? MD.fg[MD.fg.length - 1].v : null;
   const fgTxt = fgNow == null ? '' : '恐懼貪婪 ' + fgNow + '（' + (fgNow < 25 ? '極度恐懼' : fgNow < 45 ? '恐懼' : fgNow <= 55 ? '中性' : fgNow <= 75 ? '貪婪' : '極度貪婪') + '）';
@@ -76,16 +80,16 @@ function viewTeam() {
     (dm0 ? '<div class="row"><div class="row-main"><span>比特幣市佔率</span><span class="sub">' + dm0.now.toFixed(1) + '%' + (dm0.dom ? '　' + ({ up: '上升，山寨偏弱', down: '下降，山寨偏強', flat: '持平' }[dm0.dom]) : '　累積中') + '</span></div></div>' : '') +
     '</div><p class="say">' + calTxt + '</p><p class="say">結構層決定大方向、資金層確認、觸發層決定時機。三層都相反就不做；兩層相反減半；一層相反減碼四分之一。資料來源：幣安、DefiLlama、CoinGecko</p></section>';
   const ex = exploreState();
-  const exHTML = '<section><h3>' + (ex.on ? '試單期' : '學習進度') + '</h3>' + (ex.on ? '<div class="big">' + ex.done + '<small>／ ' + EXPLORE_N + ' 筆完成</small></div><div class="exbar"><i style="width:' + Math.round((ex.done / EXPLORE_N) * 100) + '%"></i></div><p class="say">團隊剛開始沒有自己的紀錄，所以先「亂槍打鳥」：看到訊號就用最小風險 0.25% 做，同時最多 ' + EXPLORE_OPEN + ' 筆。做滿 ' + EXPLORE_N + ' 筆後，改成只做自己判斷會賺的單，另外偶爾小量試單，繼續學。</p>' : '<p class="say">已經做完 ' + ex.done + ' 筆。現在只做預估會賺的單；沒把握的情況，偶爾用 0.25% 小量試，繼續累積經驗。</p>') + '</section>';
+  const exHTML = '<section><h3>' + (ex.on ? '試單期' : '學習進度') + '</h3>' + (ex.on ? '<div class="big">' + ex.done + '<small>／ ' + EXPLORE_N + ' 筆完成</small></div><div class="exbar"><i style="width:' + Math.round((ex.done / EXPLORE_N) * 100) + '%"></i></div><p class="say">團隊剛開始沒有自己的紀錄，所以先「亂槍打鳥」：看到訊號就用最小風險 0.25% 做，同時最多 ' + EXPLORE_OPEN + ' 筆。做滿 ' + EXPLORE_N + ' 筆後，改成只做自己判斷會賺的單，另外偶爾小量試單，繼續學。</p>' : '<p class="say">已經做完 ' + ex.done + ' 筆。現在只做預估會賺的單；沒把握的情況，偶爾用 0.25% 小量試，繼續累積經驗。</p>') + practiceHTML() + '</section>';
   return '<div class="cols"><section style="margin-top:14px"><h3>市場總監</h3><div class="verdict ' + (rg ? (rg.dir === 'up' ? 'up' : rg.dir === 'down' ? 'down' : '') : '') + '">' + dirTxt + '</div><div class="sub">' + (rg ? '比特幣 1 小時線：4 項指標有 ' + votes + ' 項' + (rg.dir === 'flat' ? '同方向，方向不明確' : '同意') + '　24 小時 ' + fPct(rg.chg) + '　每小時波動約 ' + (rg.vol * 100).toFixed(2) + '%' : '讀取比特幣走勢中') + '</div>' + moodHTML + '<div class="sub status">' + esc(status) + (TS.err ? '　' + esc(TS.err) : '') + '</div></section>' +
-    briefHTML() + '<section><h3>團隊額度</h3><div class="quick big tq">' + [0, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="tpct" data-id="' + p + '" class="' + (tp === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(bd.eq * p) + '</small></button>').join('') + '</div>' +
+    feedHTML() + briefHTML() + '<section><h3>團隊額度</h3><div class="quick big tq">' + [0, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="tpct" data-id="' + p + '" class="' + (tp === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(bd.eq * p) + '</small></button>').join('') + '</div>' +
     '<div class="sub" style="margin-top:10px">團隊最多動用你總資產的 ' + tp * 100 + '%（' + fU(bd.alloc) + ' USDT），已用 ' + fU(bd.used) + '。自己找單用這個額度；你在交易頁按「請團隊判斷」或委託的單，用你自己的每筆金額，不佔額度。</div>' +
     '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + (TS.auto && tp > 0) + '" data-act="tauto"><span>讓團隊自己找單交易<span class="sub" style="display:block">團隊自己判斷前 ' + S.coins.length + ' 大幣哪個值得做，網頁開著才會運作</span></span><i class="sw"></i></button></div></div>' +
     '<h3 style="margin-top:22px">團隊手上的單</h3>' + (tRows ? '<div class="list">' + tRows + '</div>' : '<div class="empty">目前沒有。</div>') + '</section>' +
-    layersHTML + calHTML() + sectorHTML() + taHTML() + exHTML + guardHTML + newsHTML() +
+    layersHTML + calHTML() + sectorHTML() + taHTML() + exHTML + guardHTML + newsHTML() + whaleHTML() +
     '<section><h3>資金控制</h3><div class="big">' + (sz.risk * 100).toFixed(2) + '%<small>下一筆的基本風險</small></div><div class="sub">約 ' + fU(bd.alloc * sz.risk) + ' USDT：停損打到時大約賠這麼多。' + esc(sz.notes.join('，')) + '。實際下單時再依這筆的把握度乘 0.7～1.3 倍。</div>' + riskSvg(J) + '</section>' +
     '<section><h3>判斷準確率</h3><div class="acc"><div><label>最近 20 筆</label>' + accCell(acc.recent) + '</div><div><label>再之前 20 筆</label>' + accCell(acc.before) + '</div><div><label>全部</label>' + accCell(acc.all) + '</div></div>' + (acc.recent.n && acc.before.n ? '<p class="say">' + (acc.recent.avg > acc.before.avg ? '最近比之前做得好，學到的守則有效。' : acc.recent.avg < acc.before.avg ? '最近比之前差，團隊會自動減碼，並繼續修正守則。' : '跟之前差不多。') + '</p>' : '') + '</section>' + weekHTML() +
-    '<section><h3>訊號獵人　前 ' + S.coins.length + ' 大幣</h3>' + (sigs.length ? '<div class="list">' + sigs.map(sigRow).join('') + '</div>' : '<div class="empty">目前沒有值得做的訊號。團隊每分鐘掃描一次' + (TS.cGrade ? '；另有 ' + TS.cGrade + ' 個訊號被團隊判斷為不值得做。' : '。') + '</div>') + '<div class="sub" style="margin-top:8px">右邊是團隊依照回測和自己的實戰紀錄，預估這筆平均能賺幾 R。大於 +0.10R 才會做。</div></section>' +
+    '<section><h3>訊號獵人　前 ' + S.coins.length + ' 大幣</h3>' + (sigs.length ? '<div class="list">' + sigs.map(sigRow).join('') + '</div>' : '<div class="empty">目前沒有值得做的訊號。團隊每分鐘掃描一次' + (TS.cGrade ? '；另有 ' + TS.cGrade + ' 個訊號被團隊判斷為不值得做。' : '。') + '</div>') + '<div class="sub" style="margin-top:8px">右邊是團隊依照回測和自己的實戰紀錄，預估這筆平均能賺幾 R。大於 +0.10R 才會做。</div></section>' + vetoHTML() +
     '<section><h3>團隊筆記</h3>' + (J.length ? '<div class="list">' + journalRows(TS.journal) + '</div>' : '<div class="empty">還沒有紀錄。團隊每做一筆，就會在這裡寫下為什麼做、結果對還是錯，以及學到什麼。</div>') + '</section>' +
     '<section><h3>團隊守則</h3>' + (avoid.length || prefer.length ? (avoid.length ? '<h4 class="rh">避開</h4><div class="list">' + ruleRows(avoid) + '</div>' : '') + (prefer.length ? '<h4 class="rh">偏好</h4><div class="list">' + ruleRows(prefer) + '</div>' : '') : '<div class="empty">' + (TS.kb ? '目前沒有明顯該避開或偏好的情況。' : '時光機讀完資料後會先從歷史訂出守則，之後每做一筆就修正一次。') + '</div>') + '<div class="sub" style="margin-top:8px">守則從回測和團隊自己的實戰紀錄算出來，實戰的一筆算三份樣本。至少 15 份樣本才會訂守則。</div></section>' +
     '<section><h3>時光機　前 ' + S.coins.length + ' 大幣、過去 14 天</h3>' + (keys.length ? '<div class="list">' + keys.map(keyRow).join('') + '</div><div class="sub" style="margin-top:8px">每種訊號都照同一套規則回測：停損 1R，賺 1R 移到打平，賺 1.5R 後停損跟著最近 6 根移動，停利上限 4R，最多抱 4 小時，已扣手續費。</div>' : '<div class="empty">' + (TS.loading ? '讀取中　' + TS.loaded + ' / ' + TS.total : '等行情連上後開始回測') + '</div>') + '</section>' +
@@ -144,6 +148,7 @@ function teamAct(act, id) {
     tradeBuy(s.side, false, s);
     return true;
   }
+  if (act === 'tpractice') { TS.practice = TS.practice === false; TS.practiceMiss = null; saveTeam(); refreshTeam(); toast(TS.practice ? '冷場練習單：開' : '冷場練習單：關'); return true; }
   if (act === 'tauto') { if (state.settings.teamPct <= 0) { toast('先把團隊額度設成大於 0%'); return true; } TS.auto = !TS.auto; saveTeam(); refreshTeam(); toast(TS.auto ? '團隊會用額度自己交易 A、B 級訊號' : '團隊只找訊號，不會自己交易'); return true; }
   if (act === 'tpct') { const v = parseFloat(id); if ([0, 0.1, 0.25, 0.5, 1].includes(v)) { state.settings.teamPct = v; save(); refreshTeam(); toast(v ? '團隊額度：總資產的 ' + v * 100 + '%' : '團隊額度 0%：團隊只找訊號'); } return true; }
   if (act === 'takeover') { const p = state.positions.find((x) => x.id === parseFloat(id)); if (p) { p.owner = 'me'; delete p.until; p.src = null; save(); toast('這筆改由你管，停損停利線可以自己拖'); if (S.sheetKind === 'book') renderBook(true); refreshTeam(); if (S.view === 'trade') render(); } return true; }

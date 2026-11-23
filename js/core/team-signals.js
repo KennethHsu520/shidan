@@ -201,14 +201,14 @@ const Team = (() => {
     return s;
   }
 
-  function simulate(k, i, p, side) {
+  function simulate(k, i, p, side, partial) {
     const long = side === 'long';
     const end = i + HOLD;
-    if (end >= k.length) return null;
+    if (end >= k.length && !partial) return null;
     let stop = p.stop, fav = 0;
     const ext = [];
     for (let j = Math.max(0, i - TRAIL_N + 1); j <= i; j++) ext.push(long ? k[j].l : k[j].h);
-    for (let j = i + 1; j <= end; j++) {
+    for (let j = i + 1; j <= Math.min(end, k.length - 1); j++) {
       const b = k[j];
       const hitS = long ? b.l <= stop : b.h >= stop;
       const hitT = long ? b.h >= p.target : b.l <= p.target;
@@ -221,6 +221,7 @@ const Team = (() => {
       ext.push(long ? b.l : b.h);
       stop = trailStop(p, long, stop, fav, ext);
     }
+    if (end >= k.length) return null;
     const exit = k[end].c;
     return { r: ((exit - p.entry) / p.dist) * (long ? 1 : -1) - rCost(p), bars: HOLD, how: 'time' };
   }

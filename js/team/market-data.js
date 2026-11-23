@@ -1,5 +1,5 @@
 const BAR5 = 5 * 60000;
-const MD = { fund: {}, oi: {}, fg: [], fundNow: {}, fsym: {}, h1: {}, t: 0, loading: false, ok: { fund: null, oi: null, fg: null } };
+const MD = { fund: {}, oi: {}, top: {}, fg: [], fundNow: {}, fsym: {}, h1: {}, t: 0, loading: false, ok: { fund: null, oi: null, fg: null } };
 const FAPI = 'https://fapi.binance.com';
 const RL_FUND = makeRL(300000, 420);
 const RL_OI = makeRL(300000, 850);
@@ -70,6 +70,12 @@ function extAt(sym, t, live) {
     const i = lastAt(O, t), j = lastAt(O, t - 4 * 3600000);
     if (i >= 0 && j >= 0 && t - O[i].t < 2 * 3600000 && O[j].v > 0) out.oiChg = O[i].v / O[j].v - 1;
   }
+  const TP = MD.top[sym];
+  if (TP && TP.length) {
+    const i = lastAt(TP, t), j = lastAt(TP, t - 4 * 3600000);
+    if (i >= 0 && j >= 0 && i !== j && t - TP[i].t < 2 * 3600000 && TP[j].v > 0) out.top = TP[i].v / TP[j].v - 1;
+  }
+  if (live && CLK == null) { const bf = bigFlow(sym); if (bf) out.big = bf.strong || Math.abs(bf.net) >= bf.thr ? (bf.net > 0 ? 'buy' : 'sell') : 'none'; }
   if (MD.fg.length) { const i = lastAt(MD.fg, t); if (i >= 0 && t - MD.fg[i].t < 2 * 86400000) out.fg = MD.fg[i].v; }
   const nm = newsAt(sym, t);
   if (nm) { out.news = nm.news; out.mnews = nm.mnews; }
@@ -104,7 +110,7 @@ async function loadMarket(coins) {
       MD.fg = d.map((x) => ({ t: +x.timestamp * 1000, v: +x.value })).filter((x) => x.t > 0 && x.v >= 0 && x.v <= 100).sort((a, b) => a.t - b.t);
       MD.ok.fg = MD.fg.length > 0;
     } catch (e) { MD.ok.fg = false; }
-    let okO = 0;
+    let okO = 0, okT = 0;
     await pool(coins, 8, async (c) => {
       try {
         const d = h1Dir(await fetchKlines(c, '1h', '&limit=60'));
@@ -120,8 +126,13 @@ async function loadMarket(coins) {
         const oi = await getAbs(FAPI + '/futures/data/openInterestHist?symbol=' + f + '&period=1h&limit=500', 8000);
         if (Array.isArray(oi)) { MD.oi[c] = oi.map((x) => ({ t: +x.timestamp, v: +x.sumOpenInterest })).filter((x) => x.t > 0 && x.v > 0).sort((a, b) => a.t - b.t); okO++; }
       } catch (e) { MD.oi[c] = MD.oi[c] || null; }
+      try {
+        const tp = await getAbs(FAPI + '/futures/data/topLongShortPositionRatio?symbol=' + f + '&period=1h&limit=500', 8000);
+        if (Array.isArray(tp)) { MD.top[c] = tp.map((x) => ({ t: +x.timestamp, v: +x.longShortRatio })).filter((x) => x.t > 0 && x.v > 0 && isFinite(x.v)).sort((a, b) => a.t - b.t); okT++; }
+      } catch (e) { MD.top[c] = MD.top[c] || null; }
     });
     MD.ok.oi = okO > 0;
+    MD.ok.top = okT > 0;
     try {
       const d = await fetchKlines('BTC', '1d', '&limit=400');
       if (d.length > 210) MD.btcD = d;
@@ -189,6 +200,7 @@ async function loadNews() {
       if (orig) { it.dup = orig.id; orig.copies = (orig.copies || 0) + 1; for (const c of it.syms) if (!orig.syms.includes(c)) orig.syms.push(c); }
       else if (Date.now() - it.t < 30 * 60000) { it.p0 = {}; for (const c of it.syms) if (S.prices[c] > 0) it.p0[c] = S.prices[c]; }
       have.set(id, it);
+      if (!it.dup && NW.items && Date.now() - it.t < 30 * 60000 && it.syms.length && (it.ev || Math.abs(it.s) >= 1)) feed('新聞', it.syms.slice(0, 3).join('、') + ' ' + (it.ev ? NEWS_EV[it.ev] || '重大消息' : it.s > 0 ? '偏多' : '偏空') + '：' + it.title.slice(0, 100));
     }
     for (const a of have.values()) {
       if (!a.p0 || a.chk || Date.now() - a.t < 3600000) continue;

@@ -354,6 +354,11 @@ button.row.coin.held { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10
 .vn { background: var(--down); color: #fff; }
 .vo { border: 1px solid var(--line); color: var(--ink2); }
 .vx { border: 1px solid var(--line); color: var(--muted); }
+.feedl { border-top: 1px solid var(--line); }
+.feedl .fr { display: grid; grid-template-columns: 44px 72px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.55; align-items: baseline; }
+.feedl .ft { color: var(--muted); font-size: 12px; }
+.feedl .fw { color: var(--accent); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.feedl .fx { color: var(--ink2); word-break: break-word; }
 .rh { font-size: 12px; color: var(--ink2); font-weight: 600; margin: 12px 0 6px; letter-spacing: 0.1em; }
 .sig .body .sub { display: block; }
 small.pn { color: var(--muted); font-size: 11px; }

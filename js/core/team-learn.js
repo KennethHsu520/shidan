@@ -18,6 +18,8 @@ const TeamLearn = (() => {
     dom: { up: '比特幣市佔率上升（山寨偏弱）', down: '比特幣市佔率下降（山寨偏強）', flat: '比特幣市佔率持平', na: '沒有市佔率資料' },
     sect: { with: '順板塊強弱（強勢板塊買漲、弱勢板塊買跌）', against: '逆板塊強弱', mid: '板塊強弱普通', na: '沒有板塊資料' },
     liq: { big: '大幣（24 小時成交額 5,000 萬美元以上）', mid: '中型幣（成交額 1,000 萬～5,000 萬美元）', small: '小幣（成交額不到 1,000 萬美元）', na: '沒有成交額資料' },
+    whale: { with: '大戶多空比 4 小時往這個方向變', against: '大戶多空比 4 小時往反方向變', flat: '大戶多空比持平', na: '沒有大戶多空比資料' },
+    big: { with: '15 分鐘大單跟這個方向同邊', against: '15 分鐘大單跟這個方向反向', none: '15 分鐘沒有明顯大單', na: '沒有大單資料' },
     room: { tight: '前方 1R 內就有擋路的高低點（空間小）', mid: '離前方高低點 1～2.5R', open: '前方 2.5R 內沒有擋路的高低點', na: '沒有空間資料' }
   };
   const EVWIN = { hack: 72, rug: 72, fraud: 72, halt: 72, delist: 168, sue: 24, depeg: 24 };
@@ -167,6 +169,8 @@ const TeamLearn = (() => {
       dom: x.dom || 'na',
       sect: x.sect == null ? 'na' : x.sect === 'mid' ? 'mid' : (x.sect === 'strong') === (side === 'long') ? 'with' : 'against',
       liq: liqTier(k, i),
+      whale: x.top == null ? 'na' : x.top > 0.05 ? (side === 'long' ? 'with' : 'against') : x.top < -0.05 ? (side === 'long' ? 'against' : 'with') : 'flat',
+      big: x.big == null ? 'na' : x.big === 'none' ? 'none' : (x.big === 'buy') === (side === 'long') ? 'with' : 'against',
       room: (() => { const rr = p ? T.roomR(k, i, side, p.dist) : null; return rr == null ? 'na' : rr < 1 ? 'tight' : rr < 2.5 ? 'mid' : 'open'; })()
     };
   }
@@ -190,7 +194,7 @@ const TeamLearn = (() => {
     return out;
   }
 
-  function build(samples, journal) {
+  function build(samples, journal, shadows) {
     const kb = { key: {}, cell: {} };
     const add = (key, f, r, w) => {
       const a = kb.key[key] || (kb.key[key] = { n: 0, s: 0, live: 0, liveS: 0 });
@@ -205,7 +209,8 @@ const TeamLearn = (() => {
       }
     };
     for (const x of samples || []) if (x && x.f && isFinite(x.r)) add(x.key, x.f, x.r, 1);
-    for (const j of journal || []) if (j && j.r != null && isFinite(j.r) && j.f) add(j.type + ':' + j.side, j.f, j.r, W_LIVE);
+    for (const x of shadows || []) if (x && x.f && x.r != null && isFinite(x.r)) add(x.type + ':' + x.side, x.f, x.r, 1);
+    for (const j of journal || []) if (j && j.r != null && isFinite(j.r) && j.f) add(j.type + ':' + j.side, j.f, j.r, j.practice ? 1 : W_LIVE);
     return kb;
   }
 

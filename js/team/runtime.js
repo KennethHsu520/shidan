@@ -1,5 +1,5 @@
 const nowT = () => (CLK != null ? CLK : Date.now());
-function teamLog(text) { TS.log.push({ t: nowT(), text }); if (TS.log.length > 30) TS.log.splice(0, TS.log.length - 30); }
+function teamLog(text, who) { TS.log.push({ t: nowT(), text }); if (TS.log.length > 30) TS.log.splice(0, TS.log.length - 30); feed(who || logWho(text), text); }
 const teamPos = () => state.positions.filter((p) => p.owner === 'team');
 function teamBudget() {
   const eq = E.equity(state, S.prices);
@@ -83,6 +83,7 @@ async function loadAllHistory() {
   if (TS.loading) return;
   TS.loading = true;
   TS.err = null;
+  const histAt = Date.now();
   const coins = S.coins.slice();
   TS.total = coins.length;
   TS.loaded = 0;
@@ -109,6 +110,7 @@ async function loadAllHistory() {
   });
   if (failed) TS.err = failed + ' 個幣的歷史資料讀取失敗';
   TS.samples = samples;
+  TS.histAt = histAt;
   TS.results = evalSamples(samples);
   learnRebuild(true);
   for (const s of TS.signals) { const res = TS.results[s.type + ':' + s.side]; s.grade = res ? res.grade : 'C'; }
@@ -121,7 +123,7 @@ function ruleId(r) { return r.kind + '|' + r.key + '|' + r.fk + ':' + r.val; }
 function learnRebuild(silent) {
   const before = new Set((TS.rules || []).map(ruleId));
   const cut = TS.sampleCut;
-  TS.kb = L.build(cut ? (TS.samples || []).filter((x) => !x.t || x.t < cut) : TS.samples || [], TS.journal.filter((j) => !j.cancel));
+  TS.kb = L.build(cut ? (TS.samples || []).filter((x) => !x.t || x.t < cut) : TS.samples || [], TS.journal.filter((j) => !j.cancel), shadowLearn(cut));
   TS.rules = L.rules(TS.kb);
   const after = new Set(TS.rules.map(ruleId));
   const added = TS.rules.filter((r) => !before.has(ruleId(r)));
@@ -152,6 +154,8 @@ async function teamScan() {
     const rk = (c) => (sc.map[c] === 'strong' ? 0 : sc.map[c] === 'weak' ? 2 : 1);
     const syms = Array.from(new Set(TS.delegs.map((d) => d.sym).concat(held, S.coins.slice().sort((a, b) => rk(a) - rk(b)))));
     TS.recent = TS.recent || {};
+    TS.scanStat = { sig: 0, trade: 0, skip: 0, bar: Math.floor(Date.now() / BAR5) };
+    if (S.mode === 'live') whaleSync(held);
     await pool(syms, S.mode === 'sim' ? 1 : 8, async (sym) => {
       try {
         const k = S.mode === 'sim' ? simAgg(sym, 5).slice(-150) : await fetchKlines(sym, '5m', '&limit=150');
@@ -163,6 +167,9 @@ async function teamScan() {
     TS.signals = TS.signals.filter((s) => now - s.barT < 30 * 60000);
     TS.cGrade = TS.signals.filter((s) => !(s.dec && s.dec.go) && s.grade === 'C').length;
     teamManage();
+    shadowResolve();
+    practiceCheck();
+    scanFeed(syms.length);
     TS.lastScan = now;
     SEC.t = 0;
     TS.err = null;
@@ -188,6 +195,7 @@ function addSignal(sym, s, k) {
   const dec = TS.kb ? L.decide(TS.kb, TS.rules || [], key, f, replay) : { go: false, est: 0, why: '時光機還在讀資料', avoid: [], prefer: [] };
   const sig = { id, sym, type: s.type, side: s.side, plan: s.plan, barT: s.barT, seen: nowT(), grade: res ? res.grade : null, replay, volx: s.volx, f, dec };
   TS.signals.unshift(sig);
+  if (TS.scanStat && CLK == null) TS.scanStat.sig++;
   for (const p of teamPos().filter((x) => x.sym === sym && x.side !== s.side)) {
     const px = S.prices[sym];
     if (!(px > 0)) continue;
@@ -196,16 +204,22 @@ function addSignal(sym, s, k) {
   }
   const d = TS.delegs.find((x) => x.sym === sym && (x.side === s.side || x.side === 'any'));
   if (d && sigWorthy(sig, d.side === 'any')) {
-    if (teamTrade(sig, d.side === 'any' ? 'ask' : 'deleg')) { TS.delegs = TS.delegs.filter((x) => x !== d); if (CLK == null) toast(delegDoneTxt(d, sig)); }
-    return;
+    if (teamTrade(sig, d.side === 'any' ? 'ask' : 'deleg')) { TS.delegs = TS.delegs.filter((x) => x !== d); if (CLK == null) toast(delegDoneTxt(d, sig)); return sigDone(sig); }
+    return sigSkip(sig, sig.bcat || 'deleg', sig.block || '你的委託在等，但這個訊號沒有成交');
   }
-  if (TS.delegs.some((x) => x.sym === sym)) return;
-  if (!TS.auto) return;
-  if (dec.go) { teamTrade(sig, 'auto', false); return; }
+  if (TS.delegs.some((x) => x.sym === sym)) return sigSkip(sig, 'deleg', '這個幣有你的委託在等，團隊自己不碰');
+  if (!TS.auto || state.settings.teamPct <= 0) return sigSkip(sig, 'off', '團隊自己找單是關的');
+  if (dec.go) return teamTrade(sig, 'auto', false) ? sigDone(sig) : sigSkip(sig, sig.bcat || 'other', sig.block || '沒有成交');
   const ex = exploreState();
-  if (ex.on && ex.open < EXPLORE_OPEN) { sig.explore = true; teamTrade(sig, 'auto', true); return; }
-  if (!ex.on && ex.open < 2 && !(dec.avoid && dec.avoid.length) && dec.est != null && dec.est > -0.15 && Math.random() < 0.2) { sig.explore = true; teamTrade(sig, 'auto', true); }
+  if (ex.on) {
+    if (ex.open >= EXPLORE_OPEN) return sigSkip(sig, 'busy', '試單已經有 ' + EXPLORE_OPEN + ' 筆在場上');
+    sig.explore = true;
+    return teamTrade(sig, 'auto', true) ? sigDone(sig) : sigSkip(sig, sig.bcat || 'other', sig.block || '沒有成交');
+  }
+  if (ex.open < 2 && !(dec.avoid && dec.avoid.length) && dec.est != null && dec.est > -0.15 && Math.random() < 0.2) { sig.explore = true; if (teamTrade(sig, 'auto', true)) return sigDone(sig); }
+  return sigSkip(sig, decCat(dec), dec.why);
 }
+function decCat(dec) { return dec.avoid && dec.avoid.length ? 'avoid' : dec.est != null && dec.est < 0.1 ? 'est' : 'replay'; }
 const SMALL_MULT = 0.5;
 const SMALL_NOTE = '小幣滑價大，風險減半';
 const smallCoin = (sig) => !!(sig && sig.f && sig.f.liq === 'small');
@@ -213,7 +227,7 @@ const EXPLORE_N = 30;
 const EXPLORE_OPEN = 6;
 const EXPLORE_RISK = 0.0025;
 function exploreState() {
-  const done = TS.journal.filter((j) => !j.cancel && j.src !== 'deleg' && j.r != null).length;
+  const done = TS.journal.filter((j) => !j.cancel && j.src !== 'deleg' && !j.practice && j.r != null).length;
   const open = teamPos().filter((p) => p.explore).length;
   const n = TS.exN != null ? TS.exN : typeof window.__gqExN === 'number' ? window.__gqExN : EXPLORE_N;
   return { on: done < n, done, open };
@@ -221,61 +235,67 @@ function exploreState() {
 function teamTrade(sig, mode, explore) {
   const deleg = mode === 'deleg' || mode === 'ask';
   const ask = mode === 'ask';
-  if (teamPos().some((p) => p.sym === sig.sym)) return false;
-  if (sig.side === 'short' && !E.canShort(state)) return false;
+  const practice = mode === 'practice';
+  const no = (cat, txt) => { sig.bcat = cat; sig.block = txt; return false; };
+  sig.bcat = null;
+  sig.block = null;
+  if (teamPos().some((p) => p.sym === sig.sym)) return no('held', '團隊手上已經有一筆 ' + sig.sym);
+  if (sig.side === 'short' && !E.canShort(state)) return no('short', '買跌還沒解鎖（第 5 關過關才能做）');
   const px = S.prices[sig.sym] || sig.plan.entry;
   const long = sig.side === 'long';
   const { stop, target } = sig.plan;
-  if (long ? !(px > stop && px < target) : !(px < stop && px > target)) return false;
-  if (Math.abs(px - sig.plan.entry) > 0.5 * Math.abs(sig.plan.entry - stop)) return false;
+  if (long ? !(px > stop && px < target) : !(px < stop && px > target)) return no('chase', '價格已經離開停損到停利的範圍');
+  if (Math.abs(px - sig.plan.entry) > 0.5 * Math.abs(sig.plan.entry - stop)) return no('chase', '價格離進場價超過 0.5R，不追');
   let amount, risk = null, notes = [];
   const b = teamBudget();
   if (mode === 'deleg') amount = Math.min(orderAmount().amount, E.maxAmount(state.cash, 1, sig.side));
   else {
-    if (!ask && (state.settings.teamPct <= 0 || b.room < E.MIN_AMOUNT)) return false;
+    if (!ask && (state.settings.teamPct <= 0 || b.room < E.MIN_AMOUNT)) return no('budget', state.settings.teamPct <= 0 ? '團隊額度是 0%' : '團隊額度已經用完');
     const g = guard();
-    if (g.block) { sig.block = g.block; return false; }
+    if (g.block) return no('guard', g.block);
     const bc = brainCheck(sig);
     sig.con = bc.con || [];
-    if (bc.block) { sig.block = bc.block; return false; }
-    if (sig.sym !== 'BTC' && g.btc > RISK.shock) { sig.block = '比特幣 15 分鐘內動了 ' + (g.btc * 100).toFixed(1) + '%，小幣先不進場'; return false; }
+    if (bc.block && !(practice && bc.conBlock)) return no(bc.conBlock ? 'con' : 'brain', bc.block);
+    if (sig.sym !== 'BTC' && g.btc > RISK.shock) return no('shock', '比特幣 15 分鐘內動了 ' + (g.btc * 100).toFixed(1) + '%，小幣先不進場');
     const small = smallCoin(sig);
-    if (small && sig.grade !== 'A' && sig.grade !== 'B') { sig.block = '小幣（24 小時成交額不到 1,000 萬美元）只做 A、B 級訊號'; return false; }
+    if (small && sig.grade !== 'A' && sig.grade !== 'B') return no('small', '小幣（24 小時成交額不到 1,000 萬美元）只做 A、B 級訊號');
     if (ask) {
       const mult = Math.max(0.25, g.mult * bc.mult) * (small ? SMALL_MULT : 1);
       notes = mult < 1 ? g.notes.concat(bc.notes, small ? [SMALL_NOTE] : []) : [];
       amount = Math.floor(Math.min(orderAmount().amount * mult, E.maxAmount(state.cash, 1, sig.side)) * 100) / 100;
     } else {
-      if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
+      if (practice) { risk = EXPLORE_RISK; notes = ['冷場練習單用最小風險 0.25%'].concat(bc.conBlock ? ['反方理由 ' + sig.con.length + ' 個，練習單照做但記下來'] : []); }
+      else if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
       else {
-        const sz = L.sizing(TS.journal.filter((j) => !j.cancel && !j.explore), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(teamClosed(), b.alloc) });
+        const sz = L.sizing(TS.journal.filter((j) => !j.cancel && !j.explore && !j.practice), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(teamClosed(), b.alloc) });
         risk = sz.risk; notes = sz.notes;
       }
       if (g.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * g.mult); notes = notes.concat(g.notes); }
       if (bc.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * bc.mult); notes = notes.concat(bc.notes); }
       if (small) { risk *= SMALL_MULT; notes = notes.concat([SMALL_NOTE]); }
       const add = b.alloc * risk;
-      if (g.open + add > RISK.open * b.alloc + 1e-9) { sig.block = '團隊同時承擔的風險已到額度的 5%'; return false; }
-      if (g.side[sig.side] + add > RISK.side * b.alloc + 1e-9) { sig.block = '同方向（' + SIDE[sig.side] + '）的風險已到額度的 3%，幣跟幣會一起漲跌'; return false; }
+      if (g.open + add > RISK.open * b.alloc + 1e-9) return no('cap', '團隊同時承擔的風險已到額度的 5%');
+      if (g.side[sig.side] + add > RISK.side * b.alloc + 1e-9) return no('cap', '同方向（' + SIDE[sig.side] + '）的風險已到額度的 3%，幣跟幣會一起漲跌');
       amount = Math.min(Team.riskSize(b.alloc, state.cash, { entry: px, dist: Math.abs(px - stop) }, risk, 1), b.room, E.maxAmount(state.cash, 1, sig.side));
       amount = Math.floor(amount * 100) / 100;
     }
   }
-  if (!(amount >= E.MIN_AMOUNT)) return false;
+  if (!(amount >= E.MIN_AMOUNT)) return no('size', '算出來的金額太小，低於最小下單金額');
   const r = E.openPosition(state, { sym: sig.sym, side: sig.side, lev: 1, amount, price: px, reason: Team.TYPES[sig.type].reason, now: nowT(), ctx: null, owner: 'team', src: deleg ? 'deleg' : 'auto' }, S.prices);
-  if (!r.ok) return false;
+  if (!r.ok) return no('other', '下單失敗：' + (r.err || '帳戶條件不符'));
   E.setStops(state, r.pos.id, roundP(stop), roundP(target), px, true);
   r.pos.until = nowT() + Team.HOLD * 5 * 60000;
   r.pos.sig = sig.type;
   if (explore) r.pos.explore = true;
+  if (practice) r.pos.practice = true;
   if (ask) r.pos.ask = true;
   const actualRisk = b.alloc > 0 ? (Math.abs(px - stop) * r.pos.qty) / b.alloc : null;
   const tracked = mode !== 'deleg';
   const th = tracked && CLK == null ? thesisNow(sig.sym, sig.side).filter((x) => x.ok).map((x) => x.k) : null;
-  const why = ask ? '你請團隊判斷 ' + sig.sym + '，團隊選擇' + SIDE[sig.side] + '：' + (sig.dec ? sig.dec.why : Team.TYPES[sig.type].name) : explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '';
-  TS.journal.push({ con: tracked && sig.con && sig.con.length ? sig.con.slice(0, 5) : null, th, id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', ask, explore: !!explore, why: why + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
+  const why = ask ? '你請團隊判斷 ' + sig.sym + '，團隊選擇' + SIDE[sig.side] + '：' + (sig.dec ? sig.dec.why : Team.TYPES[sig.type].name) : practice ? practiceWhy(sig) : explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '';
+  TS.journal.push({ con: tracked && sig.con && sig.con.length ? sig.con.slice(0, 5) : null, th, id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', ask, explore: !!explore, practice, why: why + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
   if (TS.journal.length > 300) TS.journal.splice(0, TS.journal.length - 300);
-  teamLog((ask ? '請團隊判斷成交：' : deleg ? '委託成交：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
+  teamLog((ask ? '請團隊判斷成交：' : deleg ? '委託成交：' : practice ? '冷場練習單：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
   if (!deleg && CLK == null) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
   if (CLK != null) { TS.rpOpen.add(r.pos.id); return true; }
   save();
@@ -356,7 +376,7 @@ function refreshTeam() {
 }
 function teamPulse() {
   if (!teamReady()) return;
-  if (!TS.started) { TS.started = true; loadAllHistory(); return; }
+  if (!TS.started) { TS.started = true; TS.awake = Date.now(); loadAllHistory(); return; }
   if (!TS.loading && TS.loadedAt && Date.now() - TS.loadedAt > 6 * 3600000) { loadAllHistory(); return; }
   if (TS.lastRun && !TS.replaying && TS.gapFrom == null && Date.now() - TS.lastRun > GAP_MIN && S.mode === 'live') { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }
   if (TS.gapFrom != null) { if (TS.kb && !TS.loading) teamReplay(); teamManage(); learnFromClosed(); refreshTeam(); return; }
