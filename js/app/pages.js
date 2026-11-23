@@ -42,7 +42,7 @@ function viewStats() {
   }
   const m = (label, val, c, term) => '<button class="metric" data-act="term" data-t="' + term + '"><label>' + label + '</label><b class="' + (c || '') + '">' + val + '</b></button>';
   return (
-    '<section style="margin-top:14px"><h3>總資產</h3><div class="big">' + fU(eq) + '<small>USDT</small></div><div class="sub">約 NT$ ' + Math.round(eq * TWD).toLocaleString('en-US') + '　已實現損益合計 <span class="' + cls(st.pnl) + '">' + fS(st.pnl) + '</span></div><canvas class="spark" id="spark"></canvas></section>' +
+    '<section style="margin-top:14px"><h3 class="hrow">總資產<button class="lnk" data-act="funds">調整資金</button></h3><div class="big">' + fU(eq) + '<small>USDT</small></div><div class="sub">約 NT$ ' + Math.round(eq * TWD).toLocaleString('en-US') + '　已實現損益合計 <span class="' + cls(st.pnl) + '">' + fS(st.pnl) + '</span></div><canvas class="spark" id="spark"></canvas></section>' +
     '<div class="seg wide sview" style="margin-top:22px">' + [['all', '全部'], ['me', '我'], ['team', '團隊']].map(([k, l]) => '<button data-act="sview" data-id="' + k + '" class="' + (sv === k ? 'on' : '') + '">' + l + '</button>').join('') + '</div>' +
     '<section style="margin-top:18px"><h3>' + who + '的成績</h3><div class="grid">' +
     m('交易筆數', st.n, '', '勝率') + m('勝率', st.n ? Math.round(st.winRate * 100) + '%' : '—', '', '勝率') +
@@ -200,9 +200,40 @@ function renderBook(soft) {
   if (soft) { patch($('#sheetBody'), html); return; }
   openSheet('book', html);
 }
+function fundsLine() {
+  return '<div class="fline"><div><span>總資產</span><b>' + fU(E.equity(state, S.prices)) + '</b></div><div><span>可用</span><b>' + fU(state.cash) + '</b></div><button class="btn sm" data-act="funds">調整資金</button></div>';
+}
+function openFunds(soft) {
+  const eq = E.equity(state, S.prices);
+  const F = state.flows || [];
+  const add = F.filter((f) => f.amt > 0).reduce((a, f) => a + f.amt, 0), sub = F.filter((f) => f.amt < 0).reduce((a, f) => a - f.amt, 0);
+  const team = state.settings.teamPct;
+  const html = '<h2>調整資金</h2><div class="sub">模擬資金，想加多少、減多少都可以。加減的錢不算賺賠，成績和回撤照常計算。' + (team > 0 ? '團隊用總資產的 ' + team * 100 + '% 交易，額度會跟著變。' : '') + '</div>' +
+    '<div class="calc"><div><span>總資產</span><b>' + fU(eq) + ' USDT</b></div><div><span>可用（能減少的上限）</span><b>' + fU(state.cash) + ' USDT</b></div>' + (F.length ? '<div><span>累計加入／減少</span><b><span class="up">+' + fU(add) + '</span>　<span class="down">−' + fU(sub) + '</span></b></div>' : '') + '</div>' +
+    '<div class="field"><label><span>金額</span><span>USDT</span></label><input class="inp" id="fundIn" type="text" inputmode="decimal" autocomplete="off" maxlength="14" placeholder="例如 10000" aria-label="要調整的金額"><div class="quick">' + [1000, 10000, 100000].map((v) => '<button data-act="fundQ" data-id="' + v + '">' + v.toLocaleString('en-US') + '</button>').join('') + '<button data-act="fundQ" data-id="all">全部可用</button></div></div>' +
+    '<div class="cta"><button class="btn" data-act="fundGo" data-id="-1">減少</button><button class="btn solid" data-act="fundGo" data-id="1">加入</button></div>' +
+    (F.length ? '<h3 style="margin-top:22px">最近調整</h3><div class="list">' + F.slice(-6).reverse().map((f) => '<div class="row"><div class="row-main"><div><b class="' + (f.amt > 0 ? 'up' : 'down') + '">' + (f.amt > 0 ? '加入 ' : '減少 ') + fU(Math.abs(f.amt)) + '</b><div class="sub">' + fT(f.t) + '</div></div></div></div>').join('') + '</div>' : '') +
+    '<div class="cta"><button class="btn quiet" data-act="x">完成</button></div>';
+  if (soft && S.sheetKind === 'funds') { patch($('#sheetBody'), html); return; }
+  openSheet('funds', html);
+}
+function fundGo(sign) {
+  const el = $('#fundIn');
+  const v = el ? parseFloat(String(el.value || '').replace(/[^0-9.]/g, '')) : NaN;
+  if (!(v > 0)) { toast('先輸入金額'); return; }
+  const r = E.adjustFunds(state, sign * v, Date.now(), S.prices);
+  if (!r.ok) { toast(r.err); return; }
+  save();
+  toast((r.amt > 0 ? '已加入 ' : '已減少 ') + fU(Math.abs(r.amt)) + ' USDT');
+  openFunds(true);
+  tickUI();
+  renderBar();
+  if (S.view === 'stats') render();
+  else if (S.view === 'trade') render();
+}
 function bookBody() {
   const P = state.positions, O = state.orders;
-  return (P.length ? '<div class="list">' + P.map((p) => {
+  return fundsLine() + (P.length ? '<div class="list">' + P.map((p) => {
       const px = S.prices[p.sym] > 0 ? S.prices[p.sym] : p.entry;
       const v = E.posValue(p, px) - p.margin;
       const r = posR(p, px);

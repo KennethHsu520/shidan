@@ -123,7 +123,7 @@ function ruleId(r) { return r.kind + '|' + r.key + '|' + r.fk + ':' + r.val; }
 function learnRebuild(silent) {
   const before = new Set((TS.rules || []).map(ruleId));
   const cut = TS.sampleCut;
-  TS.kb = L.build(cut ? (TS.samples || []).filter((x) => !x.t || x.t < cut) : TS.samples || [], TS.journal.filter((j) => !j.cancel), shadowLearn(cut));
+  TS.kb = L.build(cut ? (TS.samples || []).filter((x) => !x.t || x.t < cut) : TS.samples || [], TS.journal.filter((j) => !j.cancel && j.src !== 'deleg'), shadowLearn(cut));
   TS.rules = L.rules(TS.kb);
   const after = new Set(TS.rules.map(ruleId));
   const added = TS.rules.filter((r) => !before.has(ruleId(r)));
@@ -269,7 +269,7 @@ function teamTrade(sig, mode, explore) {
       if (practice) { risk = EXPLORE_RISK; notes = ['冷場練習單用最小風險 0.25%'].concat(bc.conBlock ? ['反方理由 ' + sig.con.length + ' 個，練習單照做但記下來'] : []); }
       else if (explore) { risk = EXPLORE_RISK; notes = ['試單用最小風險 0.25%']; }
       else {
-        const sz = L.sizing(TS.journal.filter((j) => !j.cancel && !j.explore && !j.practice), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(teamClosed(), b.alloc) });
+        const sz = L.sizing(TS.journal.filter((j) => !j.cancel && !j.explore && !j.practice && j.src !== 'deleg'), { est: sig.dec ? sig.dec.est : 0.1, dd: L.teamDD(teamClosed(), b.alloc) });
         risk = sz.risk; notes = sz.notes;
       }
       if (g.mult < 1) { risk = Math.max(EXPLORE_RISK, risk * g.mult); notes = notes.concat(g.notes); }
@@ -332,7 +332,8 @@ function learnFromClosed() {
     j.t1 = t.t1;
     j.exit = t.why;
     j.ok = j.r > 0;
-    const prev = TS.journal.filter((x) => x !== j && x.r != null && !x.cancel && x.type === j.type && x.side === j.side && x.f && j.f && x.f.align === j.f.align);
+    if (j.src === 'deleg') { j.review = '你委託的單：結果 ' + L.fmtR(j.r) + '。團隊和你完全分開，這筆不列入團隊學習。'; changed = true; continue; }
+    const prev = TS.journal.filter((x) => x !== j && x.r != null && !x.cancel && x.src !== 'deleg' && x.type === j.type && x.side === j.side && x.f && j.f && x.f.align === j.f.align);
     const pAvg = prev.length ? prev.reduce((a, x) => a + x.r, 0) / prev.length : null;
     let txt = (j.exit === 'thesis' && j.thx ? '進場理由不成立（' + j.thx + '），提早出場。' : '') + (j.ok ? '判斷正確' : '判斷錯誤') + '：預估 ' + (j.est != null ? L.fmtR(j.est) : '—') + '，結果 ' + L.fmtR(j.r) + '（' + (WHY[j.exit] || '出場') + '）。';
     txt += prev.length ? '同類（' + Team.TYPES[j.type].name + SIDE[j.side] + '・' + L.FEATS.align[j.f.align] + '）之前 ' + prev.length + ' 次平均 ' + L.fmtR(pAvg) + '。' : '這是團隊第一次做這類單。';

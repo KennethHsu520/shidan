@@ -149,7 +149,7 @@ function guard() {
   const wkend = wd === 0 || wd === 6;
   if (A > 0 && dd >= RISK.halt && !TS.halt) { TS.halt = true; teamLog('團隊從高點回落超過額度的 15%，全部暫停，等你按「恢復」'); saveTeam(); }
   let block = null;
-  const noPx = CLK == null ? state.positions.filter((p) => !(S.prices[p.sym] > 0)).map((p) => p.sym) : [];
+  const noPx = CLK == null ? teamPos().filter((p) => !(S.prices[p.sym] > 0)).map((p) => p.sym) : [];
   if (TS.halt) block = '回落超過 15%，全部暫停中';
   else if (noPx.length) block = '資料查核員：' + noPx.join('、') + ' 沒有報價，資料有問題先暫停進場';
   else if (A > 0 && -day >= RISK.day * A) block = '今天已虧損額度的 3%，停到明天';

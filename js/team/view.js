@@ -11,7 +11,7 @@ function viewTeam() {
   const bd = teamBudget();
   const tp = state.settings.teamPct;
   const tRows = teamPosRows();
-  const J = TS.journal.filter((j) => !j.cancel);
+  const J = TS.journal.filter((j) => !j.cancel && j.src !== 'deleg');
   const acc = L.accuracy(J.filter((j) => !j.practice));
   const sz = L.sizing(J.filter((j) => !j.explore && !j.practice), { dd: L.teamDD(J, bd.alloc) });
   const avoid = (TS.rules || []).filter((r) => r.kind === 'avoid').slice(0, 6);

@@ -26,7 +26,7 @@ out.lev125far = E.openPosition(s, { sym: 'XRP', side: 'long', lev: 125, amount: 
 out.slRank1 = E.openPosition(s, { sym: 'ETH', side: 'long', lev: 1, amount: 50, price: 10, sl: 9, tp: 12, now: Date.now() }, { ETH: 10 }).ok;
 out.demote = E.checkDemotion(s, Date.now(), {});
 const s2 = E.sanitize(JSON.parse(JSON.stringify(Object.assign(s, { favs: ['BTC', 'bad sym', 'ETH'], alerts: [{ id: 99, sym: 'BTC', px: 100, dir: 'up', t: 1 }, { id: 'x' }] }))), Date.now());
-out.keep125 = s2.positions.some((p) => p.lev === 125); out.favs = s2.favs; out.alerts = s2.alerts.length; out.nextId = s2.nextId > 99;
+out.funds = (() => { const f = E.newState(Date.now()); const pk = f.peak; const a = E.adjustFunds(f, 5000, 1, {}); const eqA = E.equity(f, {}); const b = E.adjustFunds(f, -7000, 2, {}); const c = E.adjustFunds(f, -6000, 3, {}); const d = E.adjustFunds(f, 0, 4, {}); const f2 = E.sanitize(JSON.parse(JSON.stringify(f)), Date.now()); return { a: a.ok, eqA, b: b.ok, c: c.ok, cash: f.cash, d: d.ok, dd: f.maxDD, peak: f.peak, flows: f2.flows.length, cash2: f2.cash }; })(); out.keep125 = s2.positions.some((p) => p.lev === 125); out.favs = s2.favs; out.alerts = s2.alerts.length; out.nextId = s2.nextId > 99;
 const eq0 = E.equity(s2, { BTC: 100, ETH: 10 });
 out.eqOk = Math.abs(eq0 - E.equity(s, { BTC: 100, ETH: 10 })) < 1e-9;
 console.log(JSON.stringify(out));
@@ -37,6 +37,8 @@ console.log(JSON.stringify(out));
     check('引擎：125 倍可以下單，強平價正確', r['lev125']['ok'] and abs(r['lev125']['pos']['liq'] - 100 * (1 - 1/125 + 0.005)) < 1e-9, r['lev125'])
     check('引擎：125 倍時停損比強平遠會擋下', not r['lev125far'])
     check('引擎：125 倍持倉存回讀出還在', r['keep125'])
+    fd = r['funds']
+    check('引擎：資金可以加減、不能減到超過可用、加減不算回撤', fd['a'] and fd['eqA'] == 6000 and not fd['b'] and fd['c'] and fd['cash'] == 0 and not fd['d'] and fd['dd'] == 0 and fd['flows'] == 2 and fd['cash2'] == 0, fd)
     check('引擎：段位 1 也能設停損停利', r['slRank1'])
     check('引擎：不會再強制降級平倉', r['demote'] is None)
     check('引擎：自選與提醒資料驗證', r['favs'] == ['BTC', 'ETH'] and r['alerts'] == 1 and r['nextId'], r)
@@ -86,6 +88,19 @@ def ui_tests(W, Hh, port):
     c = pg.evaluate('id => { const p = state.positions.find((x) => x.id === id); p.until = Date.now() - 1000; const nj = TS.journal.length; teamManage(); learnFromClosed(); const t = state.trades.find((x) => x.id === id); return { closed: !state.positions.some((x) => x.id === id), owner: t && t.owner, src: t && t.src, mine: E.mine(state).some((x) => x.id === id), nj: TS.journal.length - nj }; }', r['id'])
     check(tag + '：再改回我管、再交給團隊，團隊時間到會出場且不算進團隊學習', b['owner'] == 'me' and not b['hand'] and b['until'] and b['btn'] and c['closed'] and c['owner'] == 'team' and c['src'] == 'deleg' and not c['mine'] and c['nj'] == 0, [b, c])
     pg.evaluate("() => { const n = state.positions.length; state.settings.amtPct = 0.05; tradeBuy('long', true); const p = state.positions[state.positions.length - 1]; onAct('handover', String(p.id)); window.__hid = p.id; save(); }")
+    pg.evaluate("() => { closeSheet(); onAct('book', ''); }"); pg.wait_for_timeout(200)
+    pg.click('#sheetBody [data-act="funds"]'); pg.wait_for_timeout(200)
+    e0 = pg.evaluate('() => E.equity(state, S.prices)')
+    pg.fill('#fundIn', ''); pg.type('#fundIn', '12345.67'); pg.click('#sheetBody [data-act="fundGo"][data-id="1"]'); pg.wait_for_timeout(200)
+    e1 = pg.evaluate('() => ({ e: E.equity(state, S.prices), dd: state.maxDD, flows: state.flows.length, list: document.querySelector("#sheetBody").innerText.includes("加入 12,345.67") })')
+    pg.click('#sheetBody [data-act="fundQ"][data-id="all"]'); pg.click('#sheetBody [data-act="fundGo"][data-id="-1"]'); pg.wait_for_timeout(200)
+    e2 = pg.evaluate('() => ({ cash: state.cash, pos: state.positions.length })')
+    pg.fill('#fundIn', '1'); pg.click('#sheetBody [data-act="fundGo"][data-id="-1"]'); pg.wait_for_timeout(200)
+    e3 = pg.evaluate('() => state.cash')
+    pg.click('#sheetBody [data-act="fundQ"][data-id="100000"]'); pg.click('#sheetBody [data-act="fundGo"][data-id="1"]'); pg.wait_for_timeout(200)
+    e4 = pg.evaluate('() => state.cash')
+    pg.evaluate('() => closeSheet()')
+    check(tag + '：調整資金（加入、全部減少、超過可用會擋、再加回）', abs(e1['e'] - e0 - 12345.67) < 0.02 and e1['flows'] >= 1 and e1['list'] and e2['cash'] < 0.01 and e2['pos'] >= 1 and e3 < 0.01 and abs(e4 - 100000 - e3) < 0.01, [e0, e1, e2, e3, e4])
     pg.evaluate("() => { onAct('fav', 'ETH'); save(); }")
     pg.reload()
     pg.wait_for_function('() => window.__shidan && window.__shidan.S.mode === "sim"', timeout=60000)
@@ -111,6 +126,13 @@ def team_tests(port):
       for (let i = 0; i < 25; i++) TS.shadows.push({ id: 'c' + i, sym: 'BTC', type: 'pullback', side: 'long', barT: base - 3600000, plan: { entry: 1, stop: 0.9, target: 1.4, dist: 0.1 }, f: {}, cat: 'con', why: '', r: 0.5, t1: base });
       tuneGates(true); out.con = conMax();
       TS.halt = true; out.halt = guard().block; TS.halt = false;
+      const kb0 = JSON.stringify(L.build([], TS.journal.filter((j) => !j.cancel && j.src !== 'deleg'), [])); const nj = TS.journal.length;
+      for (let i = 0; i < 40; i++) TS.journal.push({ id: 900000 + i, t0: base - 7200000, t1: base - 3600000, sym: 'BTC', type: 'pullback', side: 'long', f: { align: Object.keys(L.FEATS.align)[0] }, est: 0.1, src: 'deleg', r: -3, pnl: -10, why: '', cancel: false });
+      learnRebuild(true);
+      const kb1 = JSON.stringify(L.build([], TS.journal.filter((j) => !j.cancel && j.src !== 'deleg'), []));
+      const usedKb = JSON.stringify(TS.kb) === JSON.stringify(L.build(TS.samples || [], TS.journal.filter((j) => !j.cancel && j.src !== 'deleg'), shadowLearn(TS.sampleCut)));
+      out.sep = { same: kb0 === kb1, usedKb };
+      TS.journal.splice(nj);
       return out;
     }''')
     check('團隊：影子單結果和時光機一致', r['shadow'][0] > 0 and r['shadow'][0] == r['shadow'][1], r['shadow'])
@@ -118,6 +140,7 @@ def team_tests(port):
     check('團隊：槓桿只用剛好放得下的倍數、最多 5 倍', lv[0]['lev'] == 2 and lv[1]['lev'] == 5 and lv[2]['lev'] == 5 and lv[2]['amount'] <= 100 and lv[3]['lev'] == 1, lv)
     check('團隊：反方審查會依影子單自動放寬', r['con'] == 4, r['con'])
     check('團隊：防守規則照常擋下', bool(r['halt']), r['halt'])
+    check('團隊：你委託或交給團隊的單不進團隊學習', r['sep']['same'] and r['sep']['usedKb'], r['sep'])
     check('團隊：沒有錯誤', not errs, errs[:3])
     stop()
 

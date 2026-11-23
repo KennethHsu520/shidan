@@ -26,6 +26,7 @@ async function boot() {
     const el = e.target;
     if (el && el.id === 'limPx') { onLimitInput(el); return; }
     if (el && el.id === 'levIn') { onLevInput(el); return; }
+    if (el && el.id === 'fundIn') { const v = String(el.value || '').replace(/[^0-9.]/g, ''); if (v !== el.value) el.value = v; return; }
     if (!el || (el.id !== 'coinQ' && el.id !== 'coinQs')) return;
     const v = String(el.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
     S.coinQ = v;

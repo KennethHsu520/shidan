@@ -18,6 +18,9 @@ function onAct(act, idRaw, el) {
     case 'syncNow': { save(); saveTeam(); return syPush(true).then(() => syPullApply('manual')).then(() => { toast(SY.err ? SY.err : '已同步'); renderSync(); }); }
     case 'syncOff': { const c = syRead(); delete c.token; delete c.gist; delete c.ready; syWrite(c); SY.err = null; toast('這台已中斷同步，權杖已從這台刪除'); return renderSync(); }
     case 'amount': return openTicket();
+    case 'funds': return openFunds(false);
+    case 'fundQ': { const el = $('#fundIn'); if (el) { el.value = idRaw === 'all' ? String(Math.floor(state.cash * 100) / 100) : String(id); el.focus(); } return; }
+    case 'fundGo': return fundGo(id < 0 ? -1 : 1);
     case 'pct': if ([0.05, 0.1, 0.25, 0.5, 1].includes(id)) { state.settings.amtPct = id; save(); } openAmount(); return renderBar();
     case 'lev': if (Number.isInteger(id) && id >= 1 && id <= E.MAX_LEV) { state.settings.lev = id; save(); } openAmount(); return renderBar();
     case 'buy': return tradeBuy(id, false);

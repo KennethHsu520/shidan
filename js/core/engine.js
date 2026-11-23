@@ -41,6 +41,7 @@ const Engine = (() => {
       peak: 1000,
       maxDD: 0,
       eqHist: [{ t: now, e: 1000 }],
+      flows: [],
       nextId: 1,
       rankAt: 0,
       rankLog: [{ t: now, rank: 1 }],
@@ -610,6 +611,22 @@ const Engine = (() => {
     return { ok: true, rank: s.rank, added: add };
   }
 
+  function adjustFunds(s, amt, now, prices) {
+    if (!fin(amt) || amt === 0) return { ok: false, err: '請輸入要加或減的金額' };
+    if (Math.abs(amt) > 1e9) return { ok: false, err: '一次最多調整 1,000,000,000 USDT' };
+    amt = Math.round(amt * 100) / 100;
+    if (amt < 0 && s.cash + amt < -1e-9) return { ok: false, err: '最多只能減少可用資金 ' + (Math.floor(s.cash * 100) / 100).toFixed(2) + ' USDT；持倉和掛單佔用的錢要先平倉或取消' };
+    if (amt > 0 && s.cash + amt > 1e10) return { ok: false, err: '資金上限是 10,000,000,000 USDT' };
+    s.cash = Math.max(0, s.cash + amt);
+    const e = equity(s, prices);
+    s.peak = Math.max(1, s.peak + amt, e);
+    s.flows.push({ t: now, amt });
+    if (s.flows.length > 200) s.flows.splice(0, s.flows.length - 200);
+    s.eqHist.push({ t: now, e });
+    if (s.eqHist.length > 400) s.eqHist.splice(0, s.eqHist.length - 400);
+    return { ok: true, amt, cash: s.cash, equity: e };
+  }
+
   function checkDemotion() {
     return null;
   }
@@ -740,6 +757,7 @@ const Engine = (() => {
     s.maxDD = Math.min(1, Math.max(0, num(raw.maxDD, 0)));
     s.eqHist = Array.isArray(raw.eqHist) ? raw.eqHist.filter((p) => p && fin(p.t) && fin(p.e)).slice(-400) : base.eqHist;
     if (!s.eqHist.length) s.eqHist = base.eqHist;
+    s.flows = Array.isArray(raw.flows) ? raw.flows.filter((f) => f && fin(f.t) && fin(f.amt) && f.amt !== 0).slice(-200) : [];
     s.nextId = Number.isInteger(raw.nextId) && raw.nextId > 0 ? raw.nextId : 1;
     for (const p of s.positions) if (p.id >= s.nextId) s.nextId = p.id + 1;
     for (const o of s.orders) if (o.id >= s.nextId) s.nextId = o.id + 1;
@@ -782,7 +800,7 @@ const Engine = (() => {
   }
 
   return {
-    ALL, SYM, RANKS, MAX_LEV, mine, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS, canShort, setReason, modifyOrder, feeRate,
+    ALL, SYM, RANKS, MAX_LEV, adjustFunds, mine, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS, canShort, setReason, modifyOrder, feeRate,
     newState, equity, touchDD, liqPrice, posPnl, posValue, isLev, maxAmount, costOf,
     openPosition, createOrder, cancelOrder, setStops, closePosition,
     onPrice, onCandle, statsFor, curveDD, levTrades, requirements, promote, checkDemotion,
