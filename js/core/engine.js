@@ -14,6 +14,7 @@ const Engine = (() => {
   const MMR = 0.005;
   const FUND_8H = 0.0001;
   const MIN_AMOUNT = 10;
+  const MAX_LEV = 10;
   const REASONS = {
     trend: '順著趨勢',
     dip: '跌深反彈',
@@ -47,7 +48,9 @@ const Engine = (() => {
       refills: 0,
       lastSeen: now,
       lastPrices: {},
-      settings: { twColors: false, ma: false, sym: 'BTC', interval: '1m', amtPct: 0.1, lev: 1, gestured: false, teamPct: 0.25, judge: 'me', statsView: 'all' },
+      settings: { twColors: false, ma: false, sym: 'BTC', interval: '1m', amtPct: 0.1, lev: 1, gestured: false, teamPct: 0.25, judge: 'me', statsView: 'all', ordType: 'market', slMode: 'auto', tpMode: 'r2', ema: false, boll: false, sub: 'none', ptab: 'pos' },
+      favs: [],
+      alerts: [],
       coinCache: null
     };
   }
@@ -113,20 +116,16 @@ const Engine = (() => {
     return null;
   }
 
-  function canShort(s) {
-    return s.rank >= 4 || !!(s.lessons[5] && s.lessons[5].done);
+  function canShort() {
+    return true;
   }
 
   function checkOrderInput(s, o) {
-    const r = RANKS[s.rank];
     if (typeof o.sym !== 'string' || !SYM.test(o.sym)) return '幣種不正確';
     if (o.side !== 'long' && o.side !== 'short') return '方向不正確';
-    if (o.side === 'short' && !canShort(s)) return '買跌要先通過第 5 關（停損）';
-    if (!Number.isInteger(o.lev) || o.lev < 1) return '槓桿倍數不正確';
-    if (o.lev > r.maxLev) return '這個槓桿倍數還沒解鎖';
+    if (!Number.isInteger(o.lev) || o.lev < 1 || o.lev > MAX_LEV) return '槓桿倍數要在 1～' + MAX_LEV + ' 倍之間';
     if (!pos(o.amount)) return '請輸入金額';
     if (o.amount < MIN_AMOUNT) return '最少要下 ' + MIN_AMOUNT + ' USDT';
-    if ((o.sl != null || o.tp != null) && s.rank < 2) return '停損停利要到段位 2 才會解鎖';
     if (o.reason != null && !REASONS[o.reason]) return '理由不正確';
     return null;
   }
@@ -276,7 +275,6 @@ const Engine = (() => {
   function setStops(s, id, sl, tp, price, auto) {
     const p = s.positions.find((x) => x.id === id);
     if (!p) return { ok: false, err: '找不到這筆持倉' };
-    if (s.rank < 2 && !(auto && p.owner === 'team')) return { ok: false, err: '停損停利要到段位 2 才會解鎖' };
     if (!pos(price)) return { ok: false, err: '目前沒有報價，請稍後再試' };
     if (sl != null) {
       if (!pos(sl)) return { ok: false, err: '停損價要是大於 0 的數字' };
@@ -612,35 +610,8 @@ const Engine = (() => {
     return { ok: true, rank: s.rank, added: add };
   }
 
-  function checkDemotion(s, now, prices) {
-    const e = equity(s, prices);
-    const cap = RANKS[s.rank].cap;
-    const since = s.trades.slice(s.rankAt).filter(OWN);
-    const liqs = since.slice(-10).filter((t) => t.why === 'liq').length;
-    let cause = null;
-    if (e < cap * 0.6) cause = 'loss';
-    else if (s.rank >= 4 && liqs >= 2) cause = 'liq';
-    if (!cause) return null;
-    for (const o of s.orders.slice()) cancelOrder(s, o.id);
-    for (const p of s.positions.slice()) {
-      const px = pos(prices[p.sym]) ? prices[p.sym] : p.entry;
-      closePosition(s, p.id, px, now, 'demote', prices);
-    }
-    if (s.rank === 1) {
-      s.cash = RANKS[1].cap;
-      s.refills += 1;
-      s.peak = s.cash;
-      s.rankAt = s.trades.length;
-      s.eqHist.push({ t: now, e: s.cash });
-      return { type: 'refill', cause };
-    }
-    s.rank -= 1;
-    s.cash = RANKS[s.rank].cap;
-    s.peak = s.cash;
-    s.rankAt = s.trades.length;
-    s.rankLog.push({ t: now, rank: s.rank });
-    s.eqHist.push({ t: now, e: s.cash });
-    return { type: 'demote', cause, rank: s.rank };
+  function checkDemotion() {
+    return null;
   }
 
   function warnings(s, o, prices, now) {
@@ -650,7 +621,7 @@ const Engine = (() => {
     const lev = o.lev || 1;
     if (pos(o.amount) && lev === 1 && size > 0.5) w.push('這筆押了總資產的 ' + Math.round(size * 100) + '%。一次押超過一半，看錯一次就很傷。');
     if (pos(o.amount) && lev > 1 && size * lev > 1) w.push('這筆的實際部位是總資產的 ' + (size * lev).toFixed(1) + ' 倍，漲跌都會被放大。');
-    if (s.rank >= 2 && o.sl == null) w.push('這筆沒有設停損。沒有停損，就沒有「最多賠多少」的上限。');
+    if (o.sl == null) w.push('這筆沒有設停損。沒有停損，就沒有「最多賠多少」的上限。');
     if (o.sl != null && pos(o.amount) && pos(o.ref)) {
       const risk = ((Math.abs(o.ref - o.sl) / o.ref) * o.amount * lev) / eq;
       const lim = s.rules ? s.rules.risk : 0.02;
@@ -728,7 +699,7 @@ const Engine = (() => {
     if (T.length < 8) return out;
     const st = statsFor(T);
     const share = (f) => T.filter(f).length / T.length;
-    if (s.rank >= 2 && st.slRate < 0.8) out.push({ key: 'nosl', title: '常常沒設停損', detail: '最近 ' + T.length + ' 筆只有 ' + Math.round(st.slRate * 100) + '% 有設停損。', lesson: 5, score: 1 - st.slRate + 0.5 });
+    if (st.slRate < 0.8) out.push({ key: 'nosl', title: '常常沒設停損', detail: '最近 ' + T.length + ' 筆只有 ' + Math.round(st.slRate * 100) + '% 有設停損。', lesson: 5, score: 1 - st.slRate + 0.5 });
     const heavy = share((t) => (t.lev === 1 && t.sizePct > 0.5) || (t.riskPct != null && t.riskPct > 0.05));
     if (heavy >= 0.2) out.push({ key: 'size', title: '部位押太重', detail: '最近有 ' + Math.round(heavy * 100) + '% 的交易押得太重。', lesson: 7, score: heavy + 0.4 });
     if (st.wins >= 3 && st.losses >= 3 && st.winRate >= 0.5 && st.avgWin < -st.avgLoss * 0.8) out.push({ key: 'smallwin', title: '賺少賠多', detail: '平均每筆賺 ' + (st.avgWin * 100).toFixed(2) + '%，平均每筆賠 ' + (-st.avgLoss * 100).toFixed(2) + '%。贏的次數多，錢卻沒留下來。', lesson: 6, score: 0.8 });
@@ -779,20 +750,30 @@ const Engine = (() => {
     s.lastSeen = num(raw.lastSeen, now);
     if (raw.lastPrices && typeof raw.lastPrices === 'object') for (const k of Object.keys(raw.lastPrices).slice(0, 60)) if (SYM.test(k) && pos(raw.lastPrices[k])) s.lastPrices[k] = raw.lastPrices[k];
     const st = raw.settings || {};
-    const lev = Number.isInteger(st.lev) && st.lev >= 1 && st.lev <= RANKS[s.rank].maxLev ? st.lev : 1;
+    const lev = Number.isInteger(st.lev) && st.lev >= 1 && st.lev <= MAX_LEV ? st.lev : 1;
     s.settings = {
       twColors: !!st.twColors,
       ma: !!st.ma,
       sym: typeof st.sym === 'string' && SYM.test(st.sym) ? st.sym : 'BTC',
-      interval: ['1m', '5m', '15m', '1h'].includes(st.interval) ? st.interval : '1m',
+      interval: ['1m', '5m', '15m', '1h', '4h', '1d'].includes(st.interval) ? st.interval : '1m',
       amtPct: [0.05, 0.1, 0.25, 0.5, 1].includes(st.amtPct) ? st.amtPct : 0.1,
       lev,
       gestured: !!st.gestured,
       fib: !!st.fib,
       teamPct: [0, 0.1, 0.25, 0.5, 1].includes(st.teamPct) ? st.teamPct : 0.25,
       judge: st.judge === 'team' ? 'team' : 'me',
-      statsView: ['all', 'me', 'team'].includes(st.statsView) ? st.statsView : 'all'
+      statsView: ['all', 'me', 'team'].includes(st.statsView) ? st.statsView : 'all',
+      ordType: st.ordType === 'limit' ? 'limit' : 'market',
+      slMode: ['auto', 'p1', 'p2', 'p3', 'off'].includes(st.slMode) ? st.slMode : 'auto',
+      tpMode: ['r15', 'r2', 'r3', 'off'].includes(st.tpMode) ? st.tpMode : 'r2',
+      ema: !!st.ema,
+      boll: !!st.boll,
+      sub: ['none', 'rsi', 'macd'].includes(st.sub) ? st.sub : 'none',
+      ptab: ['pos', 'ord', 'book', 'tape', 'hist', ''].includes(st.ptab) ? st.ptab : 'pos'
     };
+    s.favs = Array.isArray(raw.favs) ? Array.from(new Set(raw.favs.filter((x) => typeof x === 'string' && SYM.test(x)))).slice(0, 60) : [];
+    s.alerts = Array.isArray(raw.alerts) ? raw.alerts.filter((a) => a && Number.isInteger(a.id) && typeof a.sym === 'string' && SYM.test(a.sym) && pos(a.px) && (a.dir === 'up' || a.dir === 'down') && fin(a.t)).slice(0, 30).map((a) => ({ id: a.id, sym: a.sym, px: a.px, dir: a.dir, t: a.t })) : [];
+    for (const a of s.alerts) if (a.id >= s.nextId) s.nextId = a.id + 1;
     if (raw.coinCache && fin(raw.coinCache.t) && Array.isArray(raw.coinCache.list)) {
       const list = raw.coinCache.list.filter((x) => typeof x === 'string' && SYM.test(x)).slice(0, 300);
       if (list.length >= 5) s.coinCache = { t: raw.coinCache.t, list };
@@ -801,7 +782,7 @@ const Engine = (() => {
   }
 
   return {
-    ALL, SYM, RANKS, mine, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS, canShort, setReason, modifyOrder, feeRate,
+    ALL, SYM, RANKS, MAX_LEV, mine, FEE_SPOT, FEE_LEV, MMR, MIN_AMOUNT, REASONS, canShort, setReason, modifyOrder, feeRate,
     newState, equity, touchDD, liqPrice, posPnl, posValue, isLev, maxAmount, costOf,
     openPosition, createOrder, cancelOrder, setStops, closePosition,
     onPrice, onCandle, statsFor, curveDD, levTrades, requirements, promote, checkDemotion,

@@ -29,11 +29,14 @@ function drawChart() {
   const N = k.length;
   const lastP = all[all.length - 1].c;
   const padR = 66, padT = 26, volH = 34, padB = 20;
-  const pw = W - padR, ph = H - padT - volH - padB - 8;
+  const subOn = state.settings.sub !== 'none';
+  const subH = subOn ? Math.max(48, Math.round(H * 0.17)) : 0;
+  const pw = W - padR, ph = H - padT - volH - padB - 8 - (subOn ? subH + 10 : 0);
+  const IND = calcInd(all);
   let lo = Infinity, hi = -Infinity, vmax = 0;
   for (const c of k) { if (c.l < lo) lo = c.l; if (c.h > hi) hi = c.h; if (c.v > vmax) vmax = c.v; }
   let ma = null;
-  if (state.settings.ma && state.rank >= 3 && all.length >= 20) {
+  if (state.settings.ma && all.length >= 20) {
     ma = [];
     for (let i = start; i < end; i++) {
       if (i < 19) { ma.push(null); continue; }
@@ -43,6 +46,7 @@ function drawChart() {
       lo = Math.min(lo, s / 20); hi = Math.max(hi, s / 20);
     }
   }
+  for (const key of ['ema', 'bu', 'bl']) if (IND[key]) for (let i = start; i < end; i++) { const v = IND[key][i]; if (v != null) { if (v < lo) lo = v; if (v > hi) hi = v; } }
   const pad = (hi - lo) * 0.1 || hi * 0.001;
   lo -= pad; hi += pad;
   const y = (p) => padT + ((hi - p) / (hi - lo)) * ph;
@@ -65,7 +69,8 @@ function drawChart() {
   }
   g.fillStyle = muted;
   g.textAlign = 'center';
-  for (let i = N - 1; i >= 0; i -= Math.max(1, Math.round(70 / step))) g.fillText(fHM(k[i].t), x0 + i * step + step / 2, H - padB / 2);
+  const longIv = IVS[state.settings.interval][1] >= 240;
+  for (let i = N - 1; i >= 0; i -= Math.max(1, Math.round(70 / step))) g.fillText(longIv ? fMD(k[i].t) : fHM(k[i].t), x0 + i * step + step / 2, H - padB / 2);
   g.textAlign = 'left';
   k.forEach((c, i) => {
     const cx = x0 + i * step + step / 2;
@@ -82,6 +87,43 @@ function drawChart() {
     ma.forEach((v, i) => { if (v == null) return; const cx = x0 + i * step + step / 2; if (!st) { g.moveTo(cx, y(v)); st = true; } else g.lineTo(cx, y(v)); });
     g.stroke(); g.lineWidth = 1;
   }
+  const pline = (arr, color, width, dash) => {
+    if (!arr) return;
+    g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash || []); g.beginPath();
+    let st2 = false;
+    for (let i = start; i < end; i++) { const v = arr[i]; if (v == null) { st2 = false; continue; } const cx = x0 + (i - start) * step + step / 2; if (!st2) { g.moveTo(cx, y(v)); st2 = true; } else g.lineTo(cx, y(v)); }
+    g.stroke(); g.setLineDash([]); g.lineWidth = 1;
+  };
+  pline(IND.ema, col('--ink2'), 1.25);
+  if (IND.bu) { g.globalAlpha = 0.7; pline(IND.bu, muted, 1, [4, 3]); pline(IND.bl, muted, 1, [4, 3]); pline(IND.bm, muted, 1); g.globalAlpha = 1; }
+  if (subOn) {
+    const sy0 = padT + ph + 10, sh = subH;
+    g.strokeStyle = line; g.beginPath(); g.moveTo(0, Math.round(sy0) + 0.5); g.lineTo(pw, Math.round(sy0) + 0.5); g.stroke();
+    g.fillStyle = muted; g.font = '10px ' + font;
+    if (IND.rsi) {
+      const ry = (v) => sy0 + 4 + ((100 - v) / 100) * (sh - 8);
+      for (const lv of [30, 70]) { const yy = Math.round(ry(lv)) + 0.5; g.strokeStyle = line; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(0, yy); g.lineTo(pw, yy); g.stroke(); g.setLineDash([]); g.fillText(String(lv), pw + 6, yy); }
+      g.strokeStyle = accent; g.lineWidth = 1.25; g.beginPath();
+      let s2 = false;
+      for (let i = start; i < end; i++) { const v = IND.rsi[i]; if (v == null) continue; const cx = x0 + (i - start) * step + step / 2; if (!s2) { g.moveTo(cx, ry(v)); s2 = true; } else g.lineTo(cx, ry(v)); }
+      g.stroke(); g.lineWidth = 1;
+      const lr = IND.rsi[end - 1];
+      g.fillStyle = muted; g.fillText('RSI 14' + (lr != null ? '　' + lr.toFixed(1) : ''), 4, sy0 + 10);
+    } else if (IND.macd) {
+      let m = 0;
+      for (let i = start; i < end; i++) for (const a of [IND.macd[i], IND.sig[i], IND.hist[i]]) if (a != null) m = Math.max(m, Math.abs(a));
+      if (m > 0) {
+        const my = (v) => sy0 + sh / 2 - (v / m) * (sh / 2 - 4);
+        g.strokeStyle = line; g.beginPath(); g.moveTo(0, Math.round(my(0)) + 0.5); g.lineTo(pw, Math.round(my(0)) + 0.5); g.stroke();
+        for (let i = start; i < end; i++) { const v = IND.hist[i]; if (v == null) continue; const cx = x0 + (i - start) * step + step / 2; g.fillStyle = v >= 0 ? up : down; g.globalAlpha = 0.45; g.fillRect(cx - bw / 2, Math.min(my(0), my(v)), bw, Math.max(1, Math.abs(my(v) - my(0)))); g.globalAlpha = 1; }
+        const ml = (arr, color) => { g.strokeStyle = color; g.lineWidth = 1.25; g.beginPath(); let s3 = false; for (let i = start; i < end; i++) { const v = arr[i]; if (v == null) continue; const cx = x0 + (i - start) * step + step / 2; if (!s3) { g.moveTo(cx, my(v)); s3 = true; } else g.lineTo(cx, my(v)); } g.stroke(); g.lineWidth = 1; };
+        ml(IND.macd, ink); ml(IND.sig, accent);
+      }
+      g.fillStyle = muted; g.fillText('MACD 12 26 9', 4, sy0 + 10);
+    } else { g.fillStyle = muted; g.fillText('資料不足，副圖需要更多 K 線', 4, sy0 + 12); }
+  }
+  const legend = [state.settings.ma && ma ? ['MA20', accent] : null, IND.ema ? ['EMA50', col('--ink2')] : null, IND.bu ? ['BOLL 20 2', muted] : null].filter(Boolean);
+  if (legend.length && !(S.cross || S.hover)) { let lx = 4; g.font = '10px ' + font; for (const [t, c2] of legend) { g.fillStyle = c2; g.fillText(t, lx, padT - 2); lx += g.measureText(t).width + 12; } }
   const sym = state.settings.sym;
   const tri = (cx, cy, upDir, color) => { g.fillStyle = color; g.beginPath(); if (upDir) { g.moveTo(cx, cy); g.lineTo(cx - 5, cy + 8); g.lineTo(cx + 5, cy + 8); } else { g.moveTo(cx, cy); g.lineTo(cx - 5, cy - 8); g.lineTo(cx + 5, cy - 8); } g.closePath(); g.fill(); };
   for (const t of state.trades.slice(-30)) {
@@ -140,7 +182,7 @@ function drawChart() {
     if (isT) {
       if (p.sl != null) hline(p.sl, down, [6, 4], '團隊停損' + (p.be ? '（已移到打平）' : ''), null, p.id);
       if (p.tp != null) hline(p.tp, up, [6, 4], '團隊停利', null, p.id);
-    } else if (state.rank >= 2) {
+    } else {
       const sl = S.drag && S.drag.kind === 'sl' && S.drag.id === p.id ? S.drag.price : p.sl;
       const tp = S.drag && S.drag.kind === 'tp' && S.drag.id === p.id ? S.drag.price : p.tp;
       if (sl != null) { const loss = Math.abs(p.entry - sl) * p.qty; hline(sl, down, [6, 4], '停損 −' + fU(loss) + '（總資產 ' + (loss / eq * 100).toFixed(2) + '%）', 'sl', p.id); }

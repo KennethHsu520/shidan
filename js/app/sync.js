@@ -1,8 +1,8 @@
-const SY = { key: 'gaoqian.sync', file: 'gaoqian-sync.json', busy: false, err: null, lastPush: 0, lastPull: 0, etag: null, pending: null };
+const SY = { key: 'gaoqian.sync', file: 'gaoqian-sync.json', hbFile: 'gaoqian-hb.json', hb: null, remote: null, busy: false, err: null, lastPush: 0, lastPull: 0, etag: null, pending: null };
 const TOKRE = /^(github_pat_[A-Za-z0-9_]{20,250}|ghp_[A-Za-z0-9]{30,60})$/;
 function syRead() { try { const c = JSON.parse(localStorage.getItem(SY.key)); return c && typeof c === 'object' ? c : {}; } catch (e) { return {}; } }
 function syWrite(c) { try { localStorage.setItem(SY.key, JSON.stringify(c)); } catch (e) { SY.err = '這台裝置存不了同步設定'; } }
-function syDev() { const c = syRead(); if (!c.dev) { c.dev = Math.random().toString(36).slice(2, 10); syWrite(c); } return c.dev; }
+function syDev() { if (RUNNER) return 'runner'; const c = syRead(); if (!c.dev) { c.dev = Math.random().toString(36).slice(2, 10); syWrite(c); } return c.dev; }
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + str.length.toString(36); }
 function syLocal() {
   const a = localStorage.getItem(KEY) || '';
@@ -34,6 +34,8 @@ async function syFetchRemote(useEtag) {
   if (!res.ok) throw new Error('http');
   SY.etag = res.headers.get('ETag');
   const g = await res.json();
+  const hf = g && g.files && g.files[SY.hbFile];
+  if (hf && typeof hf.content === 'string' && hf.content.length < 500) { try { const h = JSON.parse(hf.content); if (h && typeof h.dev === 'string' && typeof h.t === 'number') SY.hb = { dev: h.dev.slice(0, 20), t: h.t }; } catch (e) { SY.hb = SY.hb || null; } }
   const f = g && g.files && g.files[SY.file];
   if (!f) return 'gone';
   let txt = f.content;
@@ -41,6 +43,7 @@ async function syFetchRemote(useEtag) {
   if (typeof txt !== 'string' || txt.length > 8000000) throw new Error('size');
   const d = JSON.parse(txt);
   if (!d || d.v !== 1 || typeof d.a !== 'string' || typeof d.tm !== 'string' || typeof d.t !== 'number' || typeof d.h !== 'string') throw new Error('bad');
+  SY.remote = { dev: typeof d.dev === 'string' ? d.dev.slice(0, 20) : '', t: d.t, at: Date.now() };
   return d;
 }
 function syApply(d) {
@@ -57,6 +60,7 @@ function syPayload() {
   return { v: 1, t: c.t || Date.now(), h: L0.h, dev: syDev(), a: L0.a, tm: L0.tm };
 }
 async function syPush(force) {
+  if (RUNNER && (!SY.runnerOk || TS.yield)) return;
   const c = syRead();
   if (!c.token || !c.gist || !c.ready || SY.busy) return;
   const d = syPayload();
@@ -77,6 +81,7 @@ async function syPush(force) {
   } catch (e) { SY.err = e.message === 'auth' ? 'GitHub 權杖失效或權限不足，請重新連線' : '同步失敗，等一下會再試'; } finally { SY.busy = false; }
 }
 function syTrack() {
+  if (TS.yield) return;
   const c = syRead();
   if (!c.token || !c.gist || !c.ready) return;
   const L0 = syLocal();
@@ -87,13 +92,15 @@ async function syPullApply(reason) {
   const c = syRead();
   if (!c.token || !c.gist || !c.ready) return false;
   try {
-    const d = await syFetchRemote(true);
+    const d = await syFetchRemote(reason !== 'manual');
     SY.lastPull = Date.now(); SY.err = null;
-    if (!d || d === 'same' || d === 'gone') return false;
+    if (d === 'same') { SY.runnerOk = true; return false; }
+    if (!d || d === 'gone') return false;
+    SY.runnerOk = true;
     const L0 = syLocal();
     if (d.h === L0.h || d.t <= (c.t || 0)) return false;
     if (!syApply(d)) return false;
-    if (reason === 'boot') { SY.applying = false; return true; }
+    if (reason === 'boot' && !SY.booted) { SY.applying = false; return true; }
     try { sessionStorage.setItem('gaoqian.synced', '1'); } catch (e) { SY.err = null; }
     location.reload();
     return true;
@@ -102,7 +109,8 @@ async function syPullApply(reason) {
 async function syBoot() {
   const c = syRead();
   if (!c.token || !c.gist || !c.ready) return;
-  await Promise.race([syPullApply('boot'), new Promise((r) => setTimeout(r, 6000))]);
+  await Promise.race([syPullApply('boot'), new Promise((r) => setTimeout(r, RUNNER ? 20000 : 6000))]);
+  SY.booted = true;
 }
 async function syConnect(tok) {
   const t = String(tok || '').trim();
@@ -157,8 +165,8 @@ function renderSync(msg) {
     body += '<p class="say" style="margin-top:16px">雲端已經有資料。要用哪一份？</p><div class="calc"><div><span>雲端（' + esc(fT(d.t)) + ' 更新）</span><b>總資產 ' + syEq(d.a) + '</b></div><div><span>這台裝置</span><b>總資產 ' + fU(E.equity(state, S.prices)) + '</b></div></div>' +
       '<div class="cta"><button class="btn" data-act="syncLocal">用這台覆蓋雲端</button><button class="btn solid" data-act="syncRemote">用雲端的資料</button></div>';
   } else if (on) {
-    body += '<div class="list" style="margin-top:16px"><div class="row"><div class="row-main"><span>狀態</span><span class="sub">' + esc(msg || syncStatus()) + '</span></div></div></div>' +
-      '<p class="say">有變動時約 20 秒內自動上傳。另一台裝置打開網頁時，會自動換成最新的資料。兩台不要同時開著操作，以最後上傳的那台為準。</p>' +
+    body += '<div class="list" style="margin-top:16px"><div class="row"><div class="row-main"><span>狀態</span><span class="sub">' + esc(msg || syncStatus()) + '</span></div></div><div class="row"><div class="row-main"><span>雲端團隊</span><span class="sub">' + esc(cloudTeamTxt()) + '</span></div></div></div>' +
+      '<p class="say">有變動時約 20 秒內自動上傳。另一台裝置打開網頁時，會自動換成最新的資料。兩台不要同時開著操作，以最後上傳的那台為準。雲端團隊（GitHub Actions）在你打開網頁時會自動暫停，你離開 2～3 分鐘後再接手。</p>' +
       '<div class="cta"><button class="btn quiet" data-act="x">關閉</button><button class="btn solid" data-act="syncNow">立即同步</button></div><div class="cta"><button class="btn quiet" data-act="syncOff">這台中斷同步</button></div>';
   } else {
     body += '<div class="field" style="margin-top:16px"><label><span>GitHub 權杖</span><span>只存在這台裝置</span></label><input class="inp" id="syncTok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text" placeholder="github_pat_ 開頭的那串文字" maxlength="260"></div>' +
@@ -176,4 +184,28 @@ function save() {
   for (const k of watchList()) if (state.lastPrices[k]) keep[k] = state.lastPrices[k];
   state.lastPrices = keep;
   try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, state, { everLive: S.everLive }))); } catch (e) { return; }
+}
+const HB_LIVE = 150000;
+async function syBeat() {
+  if (RUNNER || document.hidden || SY.beating) return;
+  const c = syRead();
+  if (!c.token || !c.gist || !c.ready) return;
+  SY.beating = true;
+  try {
+    const res = await gh('/gists/' + c.gist, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ files: { [SY.hbFile]: { content: JSON.stringify({ dev: syDev(), t: Date.now() }) } } }) });
+    if (res.ok) SY.lastBeat = Date.now();
+  } catch (e) { SY.lastBeat = SY.lastBeat || 0; } finally { SY.beating = false; }
+}
+async function runnerTick() {
+  if (!RUNNER) return;
+  try { await syFetchRemote(false); } catch (e) { return; }
+  const phone = SY.hb && SY.hb.dev !== 'runner' && Date.now() - SY.hb.t < HB_LIVE;
+  if (phone && !TS.yield) { TS.yield = true; feed('雲端團隊', '手機正在使用，雲端團隊先暫停，交給手機'); }
+  else if (!phone && TS.yield) { TS.yield = false; feed('雲端團隊', '手機已經離開，雲端團隊接手'); await syPullApply('manual'); }
+}
+function cloudTeamTxt() {
+  const r = SY.remote;
+  if (RUNNER) return '這是雲端團隊';
+  if (r && r.dev === 'runner') return '雲端團隊最後上傳 ' + fT(r.t);
+  return '還沒有收到雲端團隊的資料';
 }

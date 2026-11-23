@@ -11,6 +11,8 @@ async function boot() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('term')) onAct('term', null, e.target);
     if (e.key === 'Enter' && e.target.id === 'syncTok') { e.preventDefault(); onAct('syncGo', null, e.target); }
+    if (e.key === 'Enter' && e.target.id === 'alertPx') { e.preventDefault(); onAct('alertAdd', null, e.target); }
+    if (e.key === 'Enter' && e.target.id === 'limPx') { e.preventDefault(); e.target.blur(); }
     if (e.key === 'Escape') { if (S.sheetKind) closeSheet(); else if (S.cross) hideCross(); }
     const tg = e.target && e.target.tagName;
     if (e.metaKey || e.ctrlKey || e.altKey || tg === 'INPUT' || tg === 'TEXTAREA' || S.sheetKind || S.lesson || S.view !== 'trade') return;
@@ -22,6 +24,7 @@ async function boot() {
   });
   document.addEventListener('input', (e) => {
     const el = e.target;
+    if (el && el.id === 'limPx') { onLimitInput(el); return; }
     if (!el || (el.id !== 'coinQ' && el.id !== 'coinQs')) return;
     const v = String(el.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
     S.coinQ = v;
@@ -50,6 +53,9 @@ async function boot() {
   setInterval(() => { E.touchDD(state, S.prices); save(); }, 10000);
   setInterval(teamPulse, 1000);
   setInterval(syTrack, 5000);
+  setInterval(syBeat, 60000);
+  setTimeout(syBeat, 1500);
+  if (RUNNER) { setInterval(runnerTick, 30000); setTimeout(runnerTick, 5000); }
   try { if (sessionStorage.getItem('gaoqian.synced')) { sessionStorage.removeItem('gaoqian.synced'); setTimeout(() => toast('已換成另一台裝置的最新資料'), 600); } } catch (e) { SY.err = null; }
   const loop = () => {
     if (S.chartDirty && S.view === 'trade') { S.chartDirty = false; drawChart(); }
@@ -61,6 +67,7 @@ async function boot() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { S.hiddenAt = Date.now(); save(); saveTeam(); SY.lastPush = 0; syTrack(); return; }
     if (Date.now() - SY.lastPull > 15000) syPullApply('visible');
+    syBeat();
     if (S.mode === 'live' && Live.ws && Live.ws.readyState === 1 && S.hiddenAt && Date.now() - S.hiddenAt > 90000) onLiveReady(S.hiddenAt, false);
   });
   window.addEventListener('pagehide', save);

@@ -1,0 +1,20 @@
+name: 保持排程
+
+on:
+  schedule:
+    - cron: '23 3 1,15 * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 重新啟用排程，避免 60 天沒更新被 GitHub 停用
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/team.yml/enable"
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}

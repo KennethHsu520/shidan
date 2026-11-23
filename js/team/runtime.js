@@ -168,6 +168,7 @@ async function teamScan() {
     TS.cGrade = TS.signals.filter((s) => !(s.dec && s.dec.go) && s.grade === 'C').length;
     teamManage();
     shadowResolve();
+    tuneGates();
     practiceCheck();
     scanFeed(syms.length);
     TS.lastScan = now;
@@ -192,7 +193,7 @@ function addSignal(sym, s, k) {
   const rt = TS.rt[sym] || Team.ratios(k);
   const replay = s.replay || Team.replay(rt, s.plan, s.side, { runs: 10000 });
   const f = s.f || { align: 'flat', vol: 'mid', rsi: 'mid', sess: L.session(s.barT) };
-  const dec = TS.kb ? L.decide(TS.kb, TS.rules || [], key, f, replay) : { go: false, est: 0, why: '時光機還在讀資料', avoid: [], prefer: [] };
+  const dec = TS.kb ? L.decide(TS.kb, TS.rules || [], key, f, replay, TS.tune ? TS.tune.est : 0.1) : { go: false, est: 0, why: '時光機還在讀資料', avoid: [], prefer: [] };
   const sig = { id, sym, type: s.type, side: s.side, plan: s.plan, barT: s.barT, seen: nowT(), grade: res ? res.grade : null, replay, volx: s.volx, f, dec };
   TS.signals.unshift(sig);
   if (TS.scanStat && CLK == null) TS.scanStat.sig++;
@@ -219,7 +220,7 @@ function addSignal(sym, s, k) {
   if (ex.open < 2 && !(dec.avoid && dec.avoid.length) && dec.est != null && dec.est > -0.15 && Math.random() < 0.2) { sig.explore = true; if (teamTrade(sig, 'auto', true)) return sigDone(sig); }
   return sigSkip(sig, decCat(dec), dec.why);
 }
-function decCat(dec) { return dec.avoid && dec.avoid.length ? 'avoid' : dec.est != null && dec.est < 0.1 ? 'est' : 'replay'; }
+function decCat(dec) { return dec.avoid && dec.avoid.length ? 'avoid' : dec.est != null && dec.est < (TS.tune ? TS.tune.est : 0.1) ? 'est' : 'replay'; }
 const SMALL_MULT = 0.5;
 const SMALL_NOTE = '小幣滑價大，風險減半';
 const smallCoin = (sig) => !!(sig && sig.f && sig.f.liq === 'small');
@@ -241,12 +242,13 @@ function teamTrade(sig, mode, explore) {
   sig.block = null;
   if (teamPos().some((p) => p.sym === sig.sym)) return no('held', '團隊手上已經有一筆 ' + sig.sym);
   if (sig.side === 'short' && !E.canShort(state)) return no('short', '買跌還沒解鎖（第 5 關過關才能做）');
+  if (CLK == null && S.mode === 'live' && !(S.prices[sig.sym] > 0)) return no('data', '沒有 ' + sig.sym + ' 的即時報價，資料有問題先不進場');
   const px = S.prices[sig.sym] || sig.plan.entry;
   const long = sig.side === 'long';
   const { stop, target } = sig.plan;
   if (long ? !(px > stop && px < target) : !(px < stop && px > target)) return no('chase', '價格已經離開停損到停利的範圍');
   if (Math.abs(px - sig.plan.entry) > 0.5 * Math.abs(sig.plan.entry - stop)) return no('chase', '價格離進場價超過 0.5R，不追');
-  let amount, risk = null, notes = [];
+  let amount, risk = null, notes = [], lev = 1;
   const b = teamBudget();
   if (mode === 'deleg') amount = Math.min(orderAmount().amount, E.maxAmount(state.cash, 1, sig.side));
   else {
@@ -276,12 +278,13 @@ function teamTrade(sig, mode, explore) {
       const add = b.alloc * risk;
       if (g.open + add > RISK.open * b.alloc + 1e-9) return no('cap', '團隊同時承擔的風險已到額度的 5%');
       if (g.side[sig.side] + add > RISK.side * b.alloc + 1e-9) return no('cap', '同方向（' + SIDE[sig.side] + '）的風險已到額度的 3%，幣跟幣會一起漲跌');
-      amount = Math.min(Team.riskSize(b.alloc, state.cash, { entry: px, dist: Math.abs(px - stop) }, risk, 1), b.room, E.maxAmount(state.cash, 1, sig.side));
-      amount = Math.floor(amount * 100) / 100;
+      const lz = teamLev(b.alloc * risk, Math.abs(px - stop) / px, Math.min(b.room, state.cash), sig.side);
+      lev = lz.lev;
+      amount = lz.amount;
     }
   }
   if (!(amount >= E.MIN_AMOUNT)) return no('size', '算出來的金額太小，低於最小下單金額');
-  const r = E.openPosition(state, { sym: sig.sym, side: sig.side, lev: 1, amount, price: px, reason: Team.TYPES[sig.type].reason, now: nowT(), ctx: null, owner: 'team', src: deleg ? 'deleg' : 'auto' }, S.prices);
+  const r = E.openPosition(state, { sym: sig.sym, side: sig.side, lev, amount, price: px, reason: Team.TYPES[sig.type].reason, now: nowT(), ctx: null, owner: 'team', src: deleg ? 'deleg' : 'auto' }, S.prices);
   if (!r.ok) return no('other', '下單失敗：' + (r.err || '帳戶條件不符'));
   E.setStops(state, r.pos.id, roundP(stop), roundP(target), px, true);
   r.pos.until = nowT() + Team.HOLD * 5 * 60000;
@@ -295,13 +298,23 @@ function teamTrade(sig, mode, explore) {
   const why = ask ? '你請團隊判斷 ' + sig.sym + '，團隊選擇' + SIDE[sig.side] + '：' + (sig.dec ? sig.dec.why : Team.TYPES[sig.type].name) : practice ? practiceWhy(sig) : explore ? exploreWhy(sig) : sig.dec ? sig.dec.why : '';
   TS.journal.push({ con: tracked && sig.con && sig.con.length ? sig.con.slice(0, 5) : null, th, id: r.pos.id, t0: nowT(), sym: sig.sym, type: sig.type, side: sig.side, f: sig.f, est: sig.dec ? sig.dec.est : null, grade: sig.grade, risk: deleg ? null : risk, riskReal: actualRisk, src: deleg ? 'deleg' : 'auto', ask, explore: !!explore, practice, why: why + (notes.length ? '。資金：' + notes.join('，') : ''), r: null });
   if (TS.journal.length > 300) TS.journal.splice(0, TS.journal.length - 300);
-  teamLog((ask ? '請團隊判斷成交：' : deleg ? '委託成交：' : practice ? '冷場練習單：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + '）');
+  teamLog((ask ? '請團隊判斷成交：' : deleg ? '委託成交：' : practice ? '冷場練習單：' : explore ? '試單：' : '') + '團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px) + '（' + Team.TYPES[sig.type].name + (risk ? '，風險 ' + (risk * 100).toFixed(2) + '%' : '') + (lev > 1 ? '，' + lev + ' 倍' : '') + '）');
   if (!deleg && CLK == null) toast('團隊' + SIDE[sig.side] + ' ' + sig.sym + ' @ ' + fP(px));
   if (CLK != null) { TS.rpOpen.add(r.pos.id); return true; }
   save();
   saveTeam();
   if (S.view === 'trade') { tickUI(); drawChart(); }
   return true;
+}
+const TEAM_MAX_LEV = 5;
+function teamLev(riskUsd, distPct, room, side) {
+  if (!(distPct > 0) || !(riskUsd > 0) || !(room > 0)) return { lev: 1, amount: 0 };
+  const notional = riskUsd / distPct;
+  let lev = 1;
+  while (lev < TEAM_MAX_LEV && notional / lev > room) lev++;
+  while (lev > 1 && distPct >= (1 / lev - E.MMR) * 0.6) lev--;
+  const amount = Math.floor(Math.min(notional / lev, room, E.maxAmount(room, lev, side)) * 100) / 100;
+  return { lev, amount };
 }
 function exploreWhy(sig) {
   const ex = exploreState();
@@ -375,7 +388,7 @@ function refreshTeam() {
   if (S.view === 'team' && !S.lesson) patch($('#view'), viewTeam());
 }
 function teamPulse() {
-  if (!teamReady()) return;
+  if (TS.yield || (RUNNER && !SY.runnerOk) || !teamReady()) return;
   if (!TS.started) { TS.started = true; TS.awake = Date.now(); loadAllHistory(); return; }
   if (!TS.loading && TS.loadedAt && Date.now() - TS.loadedAt > 6 * 3600000) { loadAllHistory(); return; }
   if (TS.lastRun && !TS.replaying && TS.gapFrom == null && Date.now() - TS.lastRun > GAP_MIN && S.mode === 'live') { TS.gapFrom = TS.lastRun; TS.gapFromOrig = TS.lastRun; }

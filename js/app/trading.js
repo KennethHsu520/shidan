@@ -3,7 +3,6 @@ function afterClose() {
   if (!d) return;
   if (d.type === 'refill') S.queue.push({ kind: 'info', title: '資金已補回 1,000 USDT', lines: ['你的總資產跌到起始資金的六成以下，系統幫你重新開始。', '回頭看「成績」頁的交易紀錄，找出賠最多的那幾筆做錯了什麼。'] });
   else S.queue.push({ kind: 'info', title: '段位降為 ' + state.rank + ' ' + E.RANKS[state.rank].name, lines: [d.cause === 'liq' ? '最近 10 筆裡有 2 筆被強制平倉，代表槓桿用得太大。' : '總資產跌到這個段位資金的六成以下。', '所有持倉已經平倉，資金重設為 ' + fU(E.RANKS[state.rank].cap) + ' USDT。重新達成條件就能再升回去。'] });
-  if (state.settings.lev > E.RANKS[state.rank].maxLev) state.settings.lev = 1;
 }
 function flushQueue() {
   if (S.sheetKind || S.lesson || !S.queue.length) return;
@@ -13,7 +12,7 @@ function flushQueue() {
 }
 const canTrade = (sym) => S.prices[sym] > 0 && (S.mode === 'sim' || (S.mode === 'live' && !S.stale && !S.catching));
 const lessonDone = (id) => !!(state.lessons[id] && state.lessons[id].done);
-const limitOK = () => state.rank >= 2 || lessonDone(3);
+const limitOK = () => true;
 const curPos = () => state.positions.filter((p) => p.sym === state.settings.sym);
 
 function ctxNow() {
@@ -36,7 +35,7 @@ function atrDist(sym, price) {
   return Math.max(d * 1.5, price * 0.002);
 }
 function autoBracket(p) {
-  if (state.rank < 2 || p.sl != null || p.owner === 'team') return;
+  if (p.sl != null || p.owner === 'team') return;
   const px = S.prices[p.sym] || p.entry;
   let dist = atrDist(p.sym, px);
   if (E.isLev(p) && p.lev > 1) { const room = p.entry * (1 / p.lev - E.MMR) * 0.8; if (dist > room) dist = room; }
@@ -57,7 +56,7 @@ function posR(p, px) {
 }
 function orderAmount() {
   const eq = E.equity(state, S.prices);
-  const lev = Math.min(state.settings.lev, E.RANKS[state.rank].maxLev);
+  const lev = Math.max(1, Math.min(state.settings.lev, E.MAX_LEV));
   const want = Math.floor(eq * state.settings.amtPct * 100) / 100;
   return { amount: Math.min(want, E.maxAmount(state.cash, lev, 'long')), lev, eq };
 }

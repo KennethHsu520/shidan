@@ -3,6 +3,8 @@ function watchList() {
   set.add(state.settings.sym);
   for (const p of state.positions) set.add(p.sym);
   for (const o of state.orders) set.add(o.sym);
+  for (const s of state.favs || []) set.add(s);
+  for (const a of state.alerts || []) set.add(a.sym);
   return Array.from(set);
 }
 
@@ -227,6 +229,7 @@ function subKline() {
   if (Live.kSub === name) return;
   if (Live.kSub) wsSend({ method: 'UNSUBSCRIBE', params: [Live.kSub] });
   if (wsSend({ method: 'SUBSCRIBE', params: [name] })) Live.kSub = name;
+  subMarket();
 }
 function syncTickers() {
   const ws = Live.ws;
@@ -254,10 +257,11 @@ function connect() {
   let ws;
   const host = HOSTS[Live.host];
   const fail = () => {
+    if (S.mode === 'sim') return;
     Live.tries++;
     if (Live.tries < HOSTS.length) { Live.host = (Live.host + 1) % HOSTS.length; connect(); return; }
     Live.tries = 0;
-    if (S.mode === 'connecting' && !S.everLive) { startSim(); return; }
+    if (S.mode === 'connecting' && !S.everLive && !RUNNER) { startSim(); return; }
     setMode(Live.ok ? 'live' : 'down', true);
     Live.retry = Math.min(30000, (Live.retry || 2000) * 2);
     setTimeout(connect, Live.retry);
@@ -271,6 +275,7 @@ function connect() {
     clearTimeout(tm);
     Live.ws = ws;
     Live.kSub = null;
+    Live.mSub = null;
     Live.tSubs = new Set(names);
     Live.tries = 0;
     Live.retry = 0;
@@ -287,12 +292,15 @@ function connect() {
     if (!d || typeof d !== 'object') return;
     Live.last = Date.now();
     if (S.stale) setMode('live', false);
+    if (onMarketMsg(m, d)) return;
     if (d.e === '24hrMiniTicker' && typeof d.s === 'string' && d.s.endsWith('USDT')) {
       const sym = d.s.slice(0, -4);
       const c = +d.c, o = +d.o, q = +d.q;
       if (!E.SYM.test(sym) || !(c > 0) || !isFinite(c)) return;
       if (o > 0) S.chg[sym] = c / o - 1;
       if (q > 0) S.vol[sym] = q;
+      if (+d.h > 0) S.hi[sym] = +d.h;
+      if (+d.l > 0) S.lo[sym] = +d.l;
       onTick(sym, c);
     } else if (d.e === 'kline' && d.k && typeof d.s === 'string') {
       if (d.s !== state.settings.sym + 'USDT' || d.k.i !== state.settings.interval) return;
@@ -375,6 +383,7 @@ function startSim() {
   setInterval(() => {
     const px = Sim.tick(Date.now());
     for (const sym of E.ALL) onTick(sym, px[sym], true);
+    simMarket(state.settings.sym, px[state.settings.sym]);
     S.candles = Sim.candles(state.settings.sym, state.settings.interval);
     markChart();
   }, 1000);
@@ -384,6 +393,7 @@ function startSim() {
 
 function onTick(sym, price, fromSim) {
   S.prices[sym] = price;
+  checkAlerts(sym, price);
   if (!fromSim && sym === state.settings.sym && S.candles.length) {
     const span = IVS[state.settings.interval][1] * 60000;
     const last = S.candles[S.candles.length - 1];

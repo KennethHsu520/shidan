@@ -19,6 +19,7 @@
   - `sync.js` GitHub Gist 雲端同步
   - `market.js` 幣安行情、練習行情、幣種清單
   - `trading.js` 下單輔助
+  - `pro.js` 下單設定、訂單簿、成交、指標、價格提醒、自選
   - `chart.js` 走勢圖
   - `trade-view.js` 交易頁
   - `pages.js` 學習、成績、彈窗、課程
@@ -36,3 +37,14 @@
   - `panels.js`、`analysis.js`、`view.js` 團隊頁
 - `js/main.js`：啟動
 - `icons/`：網頁與主畫面圖示
+
+## 雲端團隊
+
+- `.github/workflows/team.yml`：每小時執行一次，用無頭瀏覽器打開這個網站，讓團隊用真實行情工作 50 分鐘，資料經由 Gist 同步
+- `.github/workflows/keepalive.yml`：每月兩次重新啟用排程，避免 60 天沒更新被停用
+- `tools/runner.mjs`：雲端執行程式；需要在 Settings → Secrets → Actions 新增 `GAOQIAN_TOKEN`（只要 Gists 讀寫權限）
+- 手機打開網頁時會每分鐘留一次心跳，雲端團隊看到就暫停；手機離開約 2～3 分鐘後雲端接手
+
+## 測試
+
+`python3 tests/run_all.py`：引擎、手機與電腦版全部按鈕、下單、團隊、模擬即時行情、雲端同步，全部通過才上線。

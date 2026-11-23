@@ -250,15 +250,16 @@ const TeamLearn = (() => {
     return rs.filter((r) => r.key === key && f[r.fk] === r.val);
   }
 
-  function decide(kb, rs, key, f, replay) {
+  function decide(kb, rs, key, f, replay, estMin) {
+    const lim = estMin != null && isFinite(estMin) ? estMin : 0.1;
     const e = estimate(kb, key, f);
     const h = hits(rs, key, f);
     const avoid = h.filter((r) => r.kind === 'avoid');
     const prefer = h.filter((r) => r.kind === 'prefer');
-    let go = e.est >= 0.1 && !avoid.length && !(replay && replay.avgR < -0.3);
+    let go = e.est >= lim && !avoid.length && !(replay && replay.avgR < -0.3);
     let why;
     if (avoid.length) why = '守則避開：' + avoid.map(label).join('、');
-    else if (e.est < 0.1) why = '同類的單預估只有 ' + fmtR(e.est) + '，不夠好';
+    else if (e.est < lim) why = '同類的單預估只有 ' + fmtR(e.est) + '，不夠好';
     else if (replay && replay.avgR < -0.3) why = '時光機重播結果太差（' + fmtR(replay.avgR) + '）';
     else why = '同類的單預估 ' + fmtR(e.est) + (prefer.length ? '，符合偏好：' + prefer.slice(0, 2).map(label).join('、') + (prefer.length > 2 ? ' 等 ' + prefer.length + ' 條' : '') : '');
     return { go, est: e.est, why, avoid, prefer, parts: e.parts };

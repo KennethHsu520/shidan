@@ -2,8 +2,8 @@ const SHKEY = 'gaoqian.shadow';
 const SH_MAX = 500;
 const FEED_MAX = 150;
 const PRACTICE_GAP = 2 * 3600000;
-const VETO = { est: '預估不夠好', avoid: '符合避開守則', replay: '重播結果太差', con: '反方審查', brain: '大方向、新聞或數據公布', guard: '防守規則', shock: '比特幣急動', small: '小幣只做 A、B 級', cap: '風險上限', chase: '價格跑掉不追', budget: '團隊額度', short: '買跌還沒解鎖', deleg: '讓給你的委託', off: '自己找單關閉', size: '金額太小', busy: '試單名額已滿', other: '其他' };
-const VETO_WHO = { est: '機會獵人', avoid: '團隊守則', replay: '時光機', con: '反方審查', brain: '市場總監', guard: '風控長', shock: '風控長', small: '風控長', cap: '風控長', budget: '風控長', chase: '交易員', short: '交易員', deleg: '交易員', off: '交易員', size: '交易員', busy: '交易員', other: '交易員' };
+const VETO = { est: '預估不夠好', avoid: '符合避開守則', replay: '重播結果太差', con: '反方審查', brain: '大方向、新聞或數據公布', guard: '防守規則', shock: '比特幣急動', small: '小幣只做 A、B 級', cap: '風險上限', chase: '價格跑掉不追', budget: '團隊額度', short: '買跌還沒解鎖', deleg: '讓給你的委託', off: '自己找單關閉', size: '金額太小', busy: '試單名額已滿', data: '資料有問題', other: '其他' };
+const VETO_WHO = { est: '機會獵人', avoid: '團隊守則', replay: '時光機', con: '反方審查', brain: '市場總監', guard: '風控長', shock: '風控長', small: '風控長', cap: '風控長', budget: '風控長', chase: '交易員', short: '交易員', deleg: '交易員', off: '交易員', size: '交易員', busy: '交易員', data: '資料查核員', other: '交易員' };
 function cleanF(f) {
   if (!f || typeof f !== 'object') return null;
   return Object.fromEntries(Object.keys(L.FEATS).filter((k) => typeof f[k] === 'string' && L.FEATS[k][f[k]]).map((k) => [k, f[k]]));
@@ -173,6 +173,7 @@ function vetoHTML() {
     '<div class="sub">還在跑 ' + pend + ' 筆　過去 7 天跑完 ' + vs.n + ' 筆' + (vs.avg != null ? '，被擋的單平均 <b class="' + cls(vs.avg) + '">' + L.fmtR(vs.avg) + '</b>' : '') + (tAvg != null ? '；團隊實際做的單平均 <b class="' + cls(tAvg) + '">' + L.fmtR(tAvg) + '</b>（' + C.length + ' 筆）' : '') + '</div>' +
     (rows ? '<h4 class="rh">每一關擋得對不對（過去 7 天）</h4><div class="list">' + rows + '</div>' : '') +
     (last ? '<h4 class="rh">最近沒做的訊號</h4><div class="list">' + last + '</div>' : '<div class="empty" style="margin-top:12px">還沒有。團隊每看到一個訊號但沒做，就會記在這裡。</div>') +
+    '<p class="say">目前設定：反方理由 ' + conMax() + ' 個以上不做；預估要 ' + L.fmtR(TS.tune ? TS.tune.est : 0.1) + ' 以上才做。每小時依過去 7 天的影子單自動調整：反方審查擋下的單平均還賺 +0.10R（至少 20 筆）就放寬成 4 個；預估不夠好被擋的單平均還賺 +0.10R（至少 30 筆）門檻降到 +0.05R；團隊實際做的單平均賠 −0.05R 以上（至少 20 筆）就收緊到 +0.15R。</p>' +
     '<p class="say">團隊沒做的每個訊號，都照同一套出場計畫在背後跑完（停損、賺 1R 打平、移動停損、最多 4 小時），不動用資金。某一關擋下的單平均還賺 +0.10R 以上，表示那一關可能擋太多；至少 10 筆才下結論。</p>' +
     '<p class="say">團隊經驗：時光機 ' + nSamp.toLocaleString() + ' 份、實戰 ' + nLive + ' 筆（一筆算 3 份）、影子單 ' + nSh + ' 筆（一筆算 1 份，跟時光機重疊的時間不重複算）。</p></section>';
 }
@@ -186,4 +187,29 @@ function practiceHTML() {
   else if (now < ps.due) st = '團隊再 ' + fLeft(ps.due - now) + '沒進場，就挑一筆 B 級以上的訊號練習';
   else st = TS.practiceMiss || '等下一次掃描挑訊號';
   return '<div class="list" style="margin-top:12px"><div class="row"><button class="toggle" role="switch" aria-checked="' + ps.on + '" data-act="tpractice"><span>冷場練習單<span class="sub" style="display:block">團隊 2 小時沒進場，就用 0.25% 風險做一筆 B 級以上的訊號</span></span><i class="sw"></i></button></div></div><div class="sub" style="margin-top:8px">' + esc(st) + (ps.n ? '　已做 ' + ps.n + ' 筆' + (ps.avg != null ? '，平均 ' + L.fmtR(ps.avg) : '') : '') + '</div><p class="say">練習單照樣遵守防守規則、重大壞消息、數據公布前後暫停和風險上限；反方理由太多也會照做，但會記進筆記。不算進資金控制和判斷準確率，學習時一筆只算一份樣本。</p>';
+}
+function tuneGates(force) {
+  if (CLK != null) return false;
+  const t = TS.tune || (TS.tune = { con: 3, est: 0.1, at: 0 });
+  const now = Date.now();
+  if (!force && now - (t.at || 0) < 3600000) return false;
+  t.at = now;
+  const by = {};
+  for (const r of vetoStats(7).rows) by[r.cat] = r;
+  const C = closedTeam().filter((j) => j.src !== 'deleg' && !j.practice && !j.explore && j.t1 >= now - 7 * DAY);
+  const tAvg = C.length ? C.reduce((a, j) => a + j.r, 0) / C.length : null;
+  let con = t.con, est = t.est;
+  const bc = by.con;
+  if (bc && bc.n >= 20) { if (bc.avg > 0.1) con = 4; else if (bc.avg < -0.05) con = 3; }
+  const be = by.est;
+  if (C.length >= 20 && tAvg < -0.05) est = 0.15;
+  else if (be && be.n >= 30 && be.avg > 0.1) est = 0.05;
+  else if (be && be.n >= 30 && be.avg <= 0) est = 0.1;
+  const msg = [];
+  if (con !== t.con) msg.push('反方審查改成 ' + con + ' 個反對理由才不做（被擋的單 ' + bc.n + ' 筆平均 ' + L.fmtR(bc.avg) + '）');
+  if (est !== t.est) msg.push('預估門檻改成 ' + L.fmtR(est) + (est > t.est ? '（團隊最近 ' + C.length + ' 筆平均 ' + L.fmtR(tAvg) + '，收緊）' : '（因預估不夠好被擋的單 ' + be.n + ' 筆平均 ' + L.fmtR(be.avg) + '，放寬）'));
+  t.con = con;
+  t.est = est;
+  for (const m of msg) teamLog('自動調整：' + m, '團隊大腦');
+  return msg.length > 0;
 }

@@ -1,0 +1,30 @@
+name: 雲端團隊
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-team
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 安裝瀏覽器控制工具
+        run: npm install --no-save --no-audit --no-fund playwright-core@1.49.1
+      - name: 讓團隊工作 50 分鐘
+        run: node tools/runner.mjs
+        env:
+          GAOQIAN_TOKEN: ${{ secrets.GAOQIAN_TOKEN }}
+          RUN_MIN: '50'

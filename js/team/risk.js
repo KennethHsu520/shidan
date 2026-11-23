@@ -115,10 +115,11 @@ function brainCheck(sig) {
   const lastSame = TS.journal.filter((j) => !j.cancel && j.sym === sig.sym && j.r != null && j.t1 && t - j.t1 < 86400000).pop();
   if (lastSame && lastSame.r < 0) con.push('團隊 24 小時內做 ' + sig.sym + ' 剛賠過（' + L.fmtR(lastSame.r) + '）');
   if (sig.dec && sig.dec.parts && sig.dec.parts.length && sig.dec.parts.every((x) => x.n < 15)) con.push('同類樣本都不到 15 份，預估不可靠');
-  if (con.length >= CON_MAX) return { block: '反方審查：找到 ' + con.length + ' 個反對理由（' + con.slice(0, 3).join('；') + '），不做', mult: Math.max(0.25, mult), notes, con, conBlock: true };
+  if (con.length >= conMax()) return { block: '反方審查：找到 ' + con.length + ' 個反對理由（' + con.slice(0, 3).join('；') + '），不做', mult: Math.max(0.25, mult), notes, con, conBlock: true };
   return { block: null, mult: Math.max(0.25, mult), notes, con };
 }
 const CON_MAX = 3;
+const conMax = () => (TS.tune && TS.tune.con >= 3 && TS.tune.con <= 4 ? TS.tune.con : CON_MAX);
 const RISK = { day: 0.03, week: 0.05, halt: 0.15, open: 0.05, side: 0.03, streak: 4, cool: 3600000, shock: 0.015 };
 function riskOf(p) {
   if (p.sl == null) return p.margin;
@@ -148,12 +149,15 @@ function guard() {
   const wkend = wd === 0 || wd === 6;
   if (A > 0 && dd >= RISK.halt && !TS.halt) { TS.halt = true; teamLog('團隊從高點回落超過額度的 15%，全部暫停，等你按「恢復」'); saveTeam(); }
   let block = null;
+  const noPx = CLK == null ? state.positions.filter((p) => !(S.prices[p.sym] > 0)).map((p) => p.sym) : [];
   if (TS.halt) block = '回落超過 15%，全部暫停中';
+  else if (noPx.length) block = '資料查核員：' + noPx.join('、') + ' 沒有報價，資料有問題先暫停進場';
   else if (A > 0 && -day >= RISK.day * A) block = '今天已虧損額度的 3%，停到明天';
   else if (coolUntil > now) block = '連賠 ' + streak + ' 筆，冷靜到 ' + fHM(coolUntil);
   let mult = 1;
   const notes = [];
   if (A > 0 && -week >= RISK.week * A) { mult *= 0.5; notes.push('最近 7 天虧超過 5%，半量'); }
   if (wkend) { mult *= 0.5; notes.push('週末成交量小，半量'); }
+  if (CLK == null && typeof CAL_UNTIL !== 'undefined' && now > CAL_UNTIL) { mult *= 0.5; notes.push('重大數據日曆過期，看不到數據公布時間，半量'); }
   return { A, day, week, dd, streak, coolUntil, open, side, wkend, block, mult, notes, btc: TS.btcMove || 0 };
 }

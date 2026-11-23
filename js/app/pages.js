@@ -1,6 +1,5 @@
-function lessonOpen(l) {
-  if (l.rank > state.rank) return false;
-  return l.id === 1 || lessonDone(l.id - 1);
+function lessonOpen() {
+  return true;
 }
 
 function viewLearn() {
@@ -11,9 +10,9 @@ function viewLearn() {
   for (let i = 1; i <= 5; i++) ladder += '<i class="' + (i < state.rank ? 'done' : i === state.rank ? 'now' : '') + '"></i>' + (i < 5 ? '<u class="' + (i < state.rank ? 'done' : '') + '"></u>' : '');
   const labels = [1, 2, 3, 4, 5].map((i) => '<span class="' + (i === state.rank ? 'now' : '') + '">' + E.RANKS[i].name + '</span>').join('');
   return (
-    '<section style="margin-top:14px"><h3>目前段位</h3><h2>段位 ' + state.rank + '　' + r.name + (state.graduated ? '　已結業' : '') + '</h2><div class="sub">可以使用：' + HAVE[state.rank] + '</div><div class="ladder">' + ladder + '</div><div class="ladder-labels">' + labels + '</div></section>' +
+    '<section style="margin-top:14px"><h3>目前段位</h3><h2>段位 ' + state.rank + '　' + r.name + (state.graduated ? '　已結業' : '') + '</h2><div class="sub">全部功能都已開放：最高 ' + E.MAX_LEV + ' 倍槓桿、買跌、停損停利、限價單、全部幣種。段位是你的成績：升級代表方法和紀律被紀錄證明，資金也會增加。</div><div class="ladder">' + ladder + '</div><div class="ladder-labels">' + labels + '</div></section>' +
     (state.graduated ? '<section><h3>結業</h3><p style="color:var(--ink2);font-size:14px;line-height:1.9">你完成了全部段位。你證明的是方法和紀律，不是未來的獲利。繼續練習，或回頭重看任何一關。</p></section>' :
-      '<section><h3>' + (next ? '升上段位 ' + next.n + ' ' + next.name + ' 的條件' : '結業條件') + '</h3><ul class="reqs">' + req.list.map((x) => '<li class="' + (x.done ? 'done' : '') + '">' + esc(x.label) + '<span>' + esc(x.prog) + '</span></li>').join('') + '</ul><div class="cta"><button class="btn solid" data-act="promote"' + (req.ready ? '' : ' disabled') + '>' + (next ? '升上段位 ' + next.n : '完成結業') + '</button></div>' + (next ? '<div class="sub" style="margin-top:10px">升級後：' + UNLOCK[next.n] + '</div>' : '') + '</section>') +
+      '<section><h3>' + (next ? '升上段位 ' + next.n + ' ' + next.name + ' 的條件' : '結業條件') + '</h3><ul class="reqs">' + req.list.map((x) => '<li class="' + (x.done ? 'done' : '') + '">' + esc(x.label) + '<span>' + esc(x.prog) + '</span></li>').join('') + '</ul><div class="cta"><button class="btn solid" data-act="promote"' + (req.ready ? '' : ' disabled') + '>' + (next ? '升上段位 ' + next.n : '完成結業') + '</button></div>' + (next ? '<div class="sub" style="margin-top:10px">升級後：資金增加到 ' + fU(next.cap) + ' USDT</div>' : '') + '</section>') +
     '<section><h3>課程</h3><div class="list">' + LESSONS.map((l) => {
       const done = lessonDone(l.id), open = lessonOpen(l);
       const st = done ? '完成' : open ? (state.lessons[l.id] && state.lessons[l.id].read ? '繼續' : '開始') : l.rank > state.rank ? '段位 ' + l.rank + ' 解鎖' : '先完成上一關';
@@ -166,18 +165,18 @@ const coinQ = () => (typeof S.coinQ === 'string' ? S.coinQ : '');
 function coinRows() {
   const held = Array.from(new Set(state.positions.map((p) => p.sym).concat(state.orders.map((o) => o.sym), TS.delegs.map((d) => d.sym))));
   const q = coinQ();
-  const key = q + '|' + state.settings.sym + '|' + held.join(',') + '|' + S.coins.length + '|' + S.coins[0];
+  const key = q + '|' + state.settings.sym + '|' + held.join(',') + '|' + state.favs.join(',') + '|' + S.coins.length + '|' + S.coins[0];
   const now = Date.now();
   if (COIN_CACHE.key === key && now - COIN_CACHE.t < 1000) return COIN_CACHE.html;
   const seen = new Set();
   const list = [];
-  for (const s of held.concat(S.coins, [state.settings.sym])) if (!seen.has(s)) { seen.add(s); list.push(s); }
+  for (const s of held.concat(state.favs, S.coins, [state.settings.sym])) if (!seen.has(s)) { seen.add(s); list.push(s); }
   const shown = q ? list.filter((s) => s.indexOf(q) >= 0).sort((a, b) => (b.indexOf(q) === 0) - (a.indexOf(q) === 0)) : list;
   if (!shown.length) { COIN_CACHE.key = key; COIN_CACHE.t = now; COIN_CACHE.html = '<div class="empty">找不到「' + esc(q) + '」。團隊只看 24 小時成交額 100 萬美元以上的幣。</div>'; return COIN_CACHE.html; }
   COIN_CACHE.key = key; COIN_CACHE.t = now;
   COIN_CACHE.html = shown.map((s) => {
     const h = holdInfo(s);
-    return '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + (h ? ' held' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small>' + h + '</span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>';
+    return '<button class="row coin' + (s === state.settings.sym ? ' on' : '') + (h ? ' held' : '') + '" data-act="sym" data-id="' + esc(s) + '"><span class="rk">' + (S.coins.indexOf(s) + 1 || '·') + '</span><span class="nm"><b>' + esc(s) + (isFav(s) ? '<i class="fv">' + ICON.star + '</i>' : '') + '</b><small>' + (S.vol[s] ? '成交額 ' + fVol(S.vol[s]) : '') + '</small>' + h + '</span><span class="pr"><b>' + fP(S.prices[s]) + '</b><small class="' + cls(S.chg[s] || 0) + '">' + (S.chg[s] != null ? fPct(S.chg[s]) : '') + '</small></span></button>';
   }).join('');
   return COIN_CACHE.html;
 }
@@ -213,16 +212,7 @@ function bookBody() {
     '<h3 style="margin-top:22px">掛單</h3>' + (O.length ? '<div class="list">' + O.map((o) => '<div class="row"><div class="row-main"><div><b>' + esc(o.sym) + '</b><span class="tag">' + (o.side === 'long' ? '掛單買漲' : '掛單買跌') + (o.lev > 1 ? ' ' + o.lev + 'x' : '') + '</span><div class="sub">到 ' + fP(o.limit) + ' 成交　金額 ' + fU(o.amount) + '</div></div><div class="right"><button class="btn sm" data-act="cancel" data-id="' + o.id + '">取消</button></div></div></div>').join('') + '</div>' : '<div class="empty">沒有掛單。點一下走勢圖就能掛單。</div>') +
     '';
 }
-function openAmount() {
-  const r = E.RANKS[state.rank];
-  const eq = E.equity(state, S.prices);
-  const levs = [1, 2, 3, 5, 10].filter((x) => x <= r.maxLev);
-  openSheet('amount', '<h2>每筆金額</h2><div class="sub">按「買漲」「買跌」時，用總資產的多少比例下單。總資產 ' + fU(eq) + ' USDT</div>' +
-    '<div class="quick big">' + [0.05, 0.1, 0.25, 0.5, 1].map((p) => '<button data-act="pct" data-id="' + p + '" class="' + (state.settings.amtPct === p ? 'on' : '') + '">' + p * 100 + '%<small>' + fU(eq * p) + '</small></button>').join('') + '</div>' +
-    (r.maxLev > 1 ? '<div class="field"><label><span>槓桿</span><span>部位 = 金額 × 槓桿</span></label><div class="seg wide">' + levs.map((x) => '<button data-act="lev" data-id="' + x + '" class="' + (state.settings.lev === x ? 'on' : '') + '">' + (x === 1 ? '不開' : x + ' 倍') + '</button>').join('') + '</div></div>' : '') +
-    '<div class="lines"><p>建議每筆 10% 以內。真正要控制的是停損時賠多少：段位 2 之後，圖上的停損線會直接顯示這個數字。</p></div>' +
-    '<div class="cta"><button class="btn solid" data-act="x">完成</button></div>');
-}
+function openAmount() { return openTicket(); }
 
 const FIG = {
   candle: '<svg viewBox="0 0 220 170" role="img" aria-label="一根上漲 K 線的四個價格"><g fill="none" stroke="var(--up)" stroke-width="1.5"><line x1="60" y1="14" x2="60" y2="156"/></g><rect x="44" y="50" width="32" height="74" fill="var(--up)"/><g font-size="11" fill="var(--ink2)" font-family="inherit"><text x="96" y="18">最高</text><text x="96" y="54">收盤</text><text x="96" y="128">開盤</text><text x="96" y="160">最低</text><text x="150" y="91" fill="var(--muted)">實體</text><text x="150" y="34" fill="var(--muted)">上影線</text><text x="150" y="146" fill="var(--muted)">下影線</text></g><g stroke="var(--line)"><line x1="66" y1="14" x2="92" y2="14"/><line x1="78" y1="50" x2="92" y2="50"/><line x1="78" y1="124" x2="92" y2="124"/><line x1="66" y1="156" x2="92" y2="156"/></g></svg>'
@@ -290,7 +280,7 @@ function renderLesson() {
     pos = total;
     const pass = L.wrong === 0;
     const ns = pass ? nextStep() : null;
-    body = '<div class="card"><small>第 ' + l.id + ' 關</small><h2>' + (pass ? '過關' : '答錯 ' + L.wrong + ' 題') + '</h2><p>' + (pass ? (l.id === 5 ? '「買跌」已經解鎖。' : '') + (ns && ns.lesson ? '下一關是「' + esc(LESSONS.find((x) => x.id === ns.lesson).title) + '」。' : '到「學習」頁看看升段的條件還差什麼。') : '全部答對才算過關。題目裡的價格會換成當下的行情，再試一次。') + '</p></div>';
+    body = '<div class="card"><small>第 ' + l.id + ' 關</small><h2>' + (pass ? '過關' : '答錯 ' + L.wrong + ' 題') + '</h2><p>' + (pass ? (ns && ns.lesson ? '下一關是「' + esc(LESSONS.find((x) => x.id === ns.lesson).title) + '」。' : '到「學習」頁看看升段的條件還差什麼。') : '全部答對才算過關。題目裡的價格會換成當下的行情，再試一次。') + '</p></div>';
     foot = pass ? '<button class="btn solid" data-act="ldone">好</button>' : '<button class="btn quiet" data-act="lreview">重看內容</button><button class="btn solid" data-act="lretry">再測一次</button>';
   }
   $('#pageBar').style.width = Math.round((pos / total) * 100) + '%';
@@ -340,7 +330,7 @@ function switchSym(sym) {
   if (!E.SYM.test(sym)) return;
   if (S.mode === 'sim' && !Sim.m[sym]) return toast('練習行情沒有這個幣');
   state.settings.sym = sym;
-  S.off = 0; S.cross = null; S.drag = null; S.candles = [];
+  S.off = 0; S.cross = null; S.drag = null; S.candles = []; S.book = null; S.tape = []; S.limitPx = null;
   save();
   syncTickers();
   if (S.sheetKind) { S.sheetKind = null; $('#sheet').hidden = true; }
